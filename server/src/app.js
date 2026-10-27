@@ -1,43 +1,37 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import caseRoutes from './routes/caseRoutes.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { isDbConnected } from './config/db.js';
 
 dotenv.config();
 
 const app = express();
 
-// Middleware
+// Security & Parsing Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
-// Basic Health Check Endpoint
+// Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     service: 'AI Mystery Room API',
-    phase: 'Phase 0 - Scaffolding'
+    database: isDbConnected() ? 'connected' : 'memory-fallback',
+    phase: 'Phase 2 - Backend Foundation',
   });
 });
 
-// Centralized Safe Error Handler
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const errorCode = err.code || 'INTERNAL_SERVER_ERROR';
-  const errorMessage = err.isOperational 
-    ? err.message 
-    : 'An unexpected internal error occurred. Please try again.';
+// Mount Case API Routes
+app.use('/api/cases', caseRoutes);
 
-  res.status(statusCode).json({
-    error: {
-      code: errorCode,
-      message: errorMessage,
-    }
-  });
-});
+// Centralized Safe Error Handling Middleware
+app.use(errorHandler);
 
 export default app;
