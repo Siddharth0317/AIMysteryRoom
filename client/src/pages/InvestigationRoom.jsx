@@ -9,6 +9,7 @@ import ClueCard from '../components/mystery/ClueCard';
 import HintTerminal from '../components/mystery/HintTerminal';
 import EmptyState from '../components/common/EmptyState';
 import ErrorBanner from '../components/common/ErrorBanner';
+import casesApi from '../api/casesApi';
 import { discoverMockClue, useMockHint } from '../utils/mockCase';
 
 export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
@@ -49,41 +50,73 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
   const totalClues = clues.length;
 
   // Clue discovery handler
-  const handleDiscoverClue = (clueId) => {
+  const handleDiscoverClue = async (clueId) => {
     setActionError(null);
     setDecryptingId(clueId);
 
-    setTimeout(() => {
+    try {
       try {
+        const res = await casesApi.discoverClue(caseId, clueId);
+        const updatedClues = (activeCase.clues || []).map((c) =>
+          c.id === clueId ? { ...c, discovered: true, description: res.clue.description } : c
+        );
+        const updatedCase = {
+          ...activeCase,
+          clues: updatedClues,
+          discoveredClueIds: Array.from(new Set([...(activeCase.discoveredClueIds || []), clueId])),
+          progress: res.progress,
+        };
+        if (onCaseUpdated) onCaseUpdated(updatedCase);
+      } catch (apiErr) {
         const updated = discoverMockClue(caseId, clueId);
         if (onCaseUpdated) onCaseUpdated(updated);
-        setDecryptingId(null);
-      } catch (err) {
-        setActionError('Failed to decrypt clue segment.');
-        setDecryptingId(null);
       }
-    }, 700);
+    } catch (err) {
+      setActionError(err.message || 'Failed to decrypt clue segment.');
+    } finally {
+      setDecryptingId(null);
+    }
   };
 
   // Hint request handler
-  const handleRequestHint = () => {
+  const handleRequestHint = async () => {
     setActionError(null);
     setHintLoading(true);
 
-    setTimeout(() => {
+    try {
       try {
-        const res = useMockHint(caseId);
-        if (res.error) {
-          setActionError(res.message || 'Cannot retrieve additional tactical hints.');
-        } else if (res.updatedCase && onCaseUpdated) {
-          onCaseUpdated(res.updatedCase);
+        const res = await casesApi.requestHint(caseId);
+        const updatedHints = [...(activeCase.hints || [])];
+        const hintIdx = activeCase.hintsUsed || 0;
+        if (updatedHints[hintIdx]) {
+          updatedHints[hintIdx] = res.hint;
+        } else {
+          updatedHints.push(res.hint);
         }
-        setHintLoading(false);
-      } catch (err) {
-        setActionError('Tactical guidance retrieval failed.');
-        setHintLoading(false);
+        const updatedCase = {
+          ...activeCase,
+          hints: updatedHints,
+          hintsUsed: res.progress?.hintsUsed ?? ((activeCase.hintsUsed || 0) + 1),
+          progress: res.progress,
+        };
+        if (onCaseUpdated) onCaseUpdated(updatedCase);
+      } catch (apiErr) {
+        if (apiErr.code === 'HINT_LIMIT_REACHED' || apiErr.status === 409) {
+          setActionError(apiErr.message || 'Hint limit reached for this difficulty level.');
+        } else {
+          const res = useMockHint(caseId);
+          if (res.error) {
+            setActionError(res.message || 'Cannot retrieve additional tactical hints.');
+          } else if (res.updatedCase && onCaseUpdated) {
+            onCaseUpdated(res.updatedCase);
+          }
+        }
       }
-    }, 800);
+    } catch (err) {
+      setActionError(err.message || 'Tactical guidance retrieval failed.');
+    } finally {
+      setHintLoading(false);
+    }
   };
 
   return (

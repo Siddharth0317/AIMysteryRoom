@@ -5,6 +5,7 @@ import { DIFFICULTY_RULES, ERROR_CODES } from '../constants/gameRules.js';
 import { calculateScore } from './scoringService.js';
 import { toPlayerSafeCase, toCaseResult } from './caseSerializer.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { generateMysteryCase } from './geminiService.js';
 
 // In-memory fallback repository for test suites or offline development
 const memoryCases = new Map();
@@ -58,8 +59,35 @@ function createPhase2Template(premise, difficulty) {
   };
 }
 
-export async function createCase({ premise, difficulty }) {
-  const caseData = createPhase2Template(premise, difficulty);
+export async function createCase({ premise, difficulty, aiClient = null }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  let caseData;
+
+  // Use Gemini API if client provided or valid GEMINI_API_KEY exists
+  if (aiClient || (apiKey && apiKey !== 'your_gemini_api_key_here')) {
+    try {
+      const generated = await generateMysteryCase(premise, difficulty, { client: aiClient });
+      const caseId = `case_${crypto.randomBytes(6).toString('hex')}`;
+      caseData = {
+        ...generated,
+        id: caseId,
+        discoveredClueIds: [],
+        hintsUsed: 0,
+        status: 'active',
+        score: 0,
+        isCorrect: null,
+        accusationSuspectId: null,
+        scoreBreakdown: null,
+      };
+    } catch (err) {
+      // Re-throw AppErrors from Gemini validation
+      if (err instanceof AppError) throw err;
+      throw new AppError(`AI Mystery generation failed: ${err.message}`, 502, ERROR_CODES.AI_GENERATION_FAILED);
+    }
+  } else {
+    // Deterministic fallback for test/offline environments without API keys
+    caseData = createPhase2Template(premise, difficulty);
+  }
 
   if (isDbConnected()) {
     const newCase = await Case.create(caseData);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { CheckCircle2, XCircle, ShieldCheck, ShieldAlert, Sparkles, RefreshCw, Home, ArrowRight, User } from 'lucide-react';
 import TerminalPanel from '../components/common/TerminalPanel';
@@ -6,15 +6,41 @@ import StatusBadge from '../components/common/StatusBadge';
 import CyberButton from '../components/common/CyberButton';
 import ScoreBreakdown from '../components/mystery/ScoreBreakdown';
 import EmptyState from '../components/common/EmptyState';
+import casesApi from '../api/casesApi';
 
 export default function Results({ activeCase, latestResult }) {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // If latestResult is not passed directly, look inside activeCase.result
-  const result = latestResult || (activeCase && activeCase.result);
+  const [fetchedResult, setFetchedResult] = useState(null);
+  const [loading, setLoading] = useState(!latestResult && !activeCase?.result);
 
-  if (!activeCase || !result) {
+  const result = latestResult || activeCase?.result || fetchedResult;
+
+  useEffect(() => {
+    if (!result && id) {
+      casesApi.getCaseResult(id)
+        .then((data) => {
+          setFetchedResult(data);
+          setLoading(false);
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [id, result]);
+
+  if (loading) {
+    return (
+      <div className="py-12 text-center font-mono text-xs text-cyber-cyan animate-pulse">
+        RECOVERING ENCRYPTED CASE VERDICT...
+      </div>
+    );
+  }
+
+  if (!result) {
     return (
       <EmptyState
         title="NO CASE VERDICT AVAILABLE"

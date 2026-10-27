@@ -5,6 +5,7 @@ import TerminalPanel from '../components/common/TerminalPanel';
 import CyberButton from '../components/common/CyberButton';
 import ErrorBanner from '../components/common/ErrorBanner';
 import LoadingTerminal from '../components/common/LoadingTerminal';
+import casesApi from '../api/casesApi';
 import { MOCK_PRESETS, createMockCase } from '../utils/mockCase';
 
 export default function CreateMystery({ onCaseCreated }) {
@@ -24,7 +25,7 @@ export default function CreateMystery({ onCaseCreated }) {
     setError(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const trimmed = premise.trim();
 
@@ -41,20 +42,24 @@ export default function CreateMystery({ onCaseCreated }) {
     setError(null);
     setIsGenerating(true);
 
-    // Simulate AI synthesis duration with realistic terminal loading
-    setTimeout(() => {
+    try {
+      let newCase;
       try {
-        const newCase = createMockCase(trimmed, difficulty);
-        if (onCaseCreated) {
-          onCaseCreated(newCase);
-        }
-        setIsGenerating(false);
-        navigate(`/case/${newCase.id}`);
-      } catch (err) {
-        setError('Case initialization failed. Please check parameters and try again.');
-        setIsGenerating(false);
+        newCase = await casesApi.createCase(trimmed, difficulty);
+      } catch (apiErr) {
+        console.warn('Backend API request error, fallback to local simulation:', apiErr.message);
+        newCase = createMockCase(trimmed, difficulty);
       }
-    }, 2800);
+
+      if (onCaseCreated) {
+        onCaseCreated(newCase);
+      }
+      setIsGenerating(false);
+      navigate(`/case/${newCase.id}`);
+    } catch (err) {
+      setError(err.message || 'Case initialization failed. Please check parameters and try again.');
+      setIsGenerating(false);
+    }
   };
 
   if (isGenerating) {

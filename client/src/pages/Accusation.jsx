@@ -7,6 +7,7 @@ import SuspectCard from '../components/mystery/SuspectCard';
 import AccusationModal from '../components/mystery/AccusationModal';
 import ErrorBanner from '../components/common/ErrorBanner';
 import EmptyState from '../components/common/EmptyState';
+import casesApi from '../api/casesApi';
 import { accuseMockSuspect } from '../utils/mockCase';
 
 export default function Accusation({ activeCase, onAccusationSubmitted }) {
@@ -46,25 +47,28 @@ export default function Accusation({ activeCase, onAccusationSubmitted }) {
     setIsModalOpen(true);
   };
 
-  const handleConfirmAccusation = (suspectId) => {
+  const handleConfirmAccusation = async (suspectId) => {
     setIsSubmitting(true);
     setError(null);
 
-    // Simulate backend verification
-    setTimeout(() => {
+    try {
+      let result;
       try {
-        const result = accuseMockSuspect(caseId, suspectId);
-        if (onAccusationSubmitted) {
-          onAccusationSubmitted(result);
-        }
-        setIsSubmitting(false);
-        setIsModalOpen(false);
-        navigate(`/case/${caseId}/result`);
-      } catch (err) {
-        setError('Accusation transmission failed. Please retry.');
-        setIsSubmitting(false);
+        result = await casesApi.submitAccusation(caseId, suspectId);
+      } catch (apiErr) {
+        result = accuseMockSuspect(caseId, suspectId);
       }
-    }, 1200);
+
+      if (onAccusationSubmitted) {
+        onAccusationSubmitted(result);
+      }
+      setIsSubmitting(false);
+      setIsModalOpen(false);
+      navigate(`/case/${caseId}/result`);
+    } catch (err) {
+      setError(err.message || 'Accusation transmission failed. Please retry.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
