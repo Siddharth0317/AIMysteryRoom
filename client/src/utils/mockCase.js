@@ -344,9 +344,6 @@ export const MOCK_CASES = {
  */
 const STORAGE_KEY = "AIMysteryRoom_Phase1_ActiveCase";
 
-/**
- * Retrieves the currently active case from localStorage or fallback to default Medium case
- */
 export function getActiveMockCase() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -354,12 +351,20 @@ export function getActiveMockCase() {
       return JSON.parse(raw);
     }
   } catch (err) {
-    console.warn("Could not read from localStorage, using default mock case", err);
+    console.warn("Could not read from localStorage", err);
   }
-  // Default to medium case
-  const defaultCase = JSON.parse(JSON.stringify(MOCK_CASES["case-med-409"]));
-  saveMockCase(defaultCase);
-  return defaultCase;
+  return null;
+}
+
+/**
+ * Clears active case from localStorage
+ */
+export function clearActiveMockCase() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (err) {
+    console.warn("Could not clear localStorage", err);
+  }
 }
 
 /**

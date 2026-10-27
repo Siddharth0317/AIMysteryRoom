@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import TopNav from './TopNav';
 import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
-export default function AppShell({ children, activeCase }) {
+export default function AppShell({ children, activeCase, onResetCaseData }) {
   const [scanlinesEnabled, setScanlinesEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
   return (
     <div className="relative min-h-screen bg-cyber-bg text-cyber-text flex flex-col font-sans selection:bg-cyber-cyan selection:text-cyber-bg">
@@ -12,14 +13,21 @@ export default function AppShell({ children, activeCase }) {
 
       {/* Optional CRT Scanlines Shader */}
       {scanlinesEnabled && (
-        <div className="cyber-scanlines fixed inset-0 pointer-events-none z-40 opacity-80" />
+        <div className="cyber-scanlines fixed inset-0 pointer-events-none z-30 opacity-70" />
       )}
 
       {/* Top Header */}
-      <TopNav activeCase={activeCase} />
+      <TopNav
+        activeCase={activeCase}
+        scanlinesEnabled={scanlinesEnabled}
+        onToggleScanlines={() => setScanlinesEnabled(prev => !prev)}
+        audioEnabled={audioEnabled}
+        onToggleAudio={() => setAudioEnabled(prev => !prev)}
+        onResetCaseData={onResetCaseData}
+      />
 
       {/* Main Content Area */}
-      <main id="main-content" className="flex-1 relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main id="main-content" className="flex-1 relative z-10 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-7">
         {children}
       </main>
 

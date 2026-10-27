@@ -1,0 +1,194 @@
+import React, { useState } from 'react';
+import { X, Sliders, Eye, EyeOff, Volume2, VolumeX, Trash2, ShieldCheck, Cpu, AlertTriangle, CheckCircle } from 'lucide-react';
+import CyberButton from '../common/CyberButton';
+import StatusBadge from '../common/StatusBadge';
+
+export default function SettingsModal({
+  isOpen,
+  onClose,
+  scanlinesEnabled,
+  onToggleScanlines,
+  audioEnabled,
+  onToggleAudio,
+  onResetCaseData,
+  activeCase
+}) {
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleReset = () => {
+    if (!resetConfirm) {
+      setResetConfirm(true);
+      return;
+    }
+    if (onResetCaseData) {
+      onResetCaseData();
+    }
+    setResetConfirm(false);
+    setResetSuccess(true);
+    setTimeout(() => {
+      setResetSuccess(false);
+      onClose();
+    }, 1200);
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cyber-bg/85 backdrop-blur-md animate-fade-in"
+    >
+      <div
+        className="relative w-full max-w-lg bg-cyber-surface border border-cyber-cyan/50 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-cyber-subsurface border-b border-cyber-border">
+          <div className="flex items-center space-x-2 text-cyber-cyan">
+            <Sliders className="w-4 h-4" />
+            <h2 id="settings-modal-title" className="font-display font-bold tracking-wider text-sm uppercase text-cyber-text">
+              TERMINAL CONFIGURATION
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close configuration window"
+            className="p-1 rounded text-cyber-muted hover:text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-5 space-y-5">
+          {/* Visual Display Section */}
+          <div className="space-y-3">
+            <span className="text-[10px] text-cyber-muted uppercase tracking-wider block border-b border-cyber-border/60 pb-1">
+              DISPLAY &amp; SHADERS
+            </span>
+
+            {/* Scanlines Toggle */}
+            <div className="flex items-center justify-between p-3 rounded bg-cyber-subsurface/60 border border-cyber-border">
+              <div className="space-y-0.5">
+                <span className="font-bold text-cyber-text flex items-center space-x-2">
+                  <span>Retro CRT Scanlines</span>
+                </span>
+                <p className="text-[11px] text-cyber-muted">
+                  Simulate high-tech CRT phosphor lines and screen curvature shader.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onToggleScanlines}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-bold transition-all ${
+                  scanlinesEnabled
+                    ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan'
+                    : 'bg-cyber-surface text-cyber-muted border border-cyber-border'
+                }`}
+              >
+                {scanlinesEnabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                <span>{scanlinesEnabled ? 'ENABLED' : 'DISABLED'}</span>
+              </button>
+            </div>
+
+            {/* Audio Feedback Toggle */}
+            <div className="flex items-center justify-between p-3 rounded bg-cyber-subsurface/60 border border-cyber-border">
+              <div className="space-y-0.5">
+                <span className="font-bold text-cyber-text flex items-center space-x-2">
+                  <span>Haptic &amp; Sound Feedback</span>
+                </span>
+                <p className="text-[11px] text-cyber-muted">
+                  Synthesize tactile terminal clicks and forensic decryption cues.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onToggleAudio}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-bold transition-all ${
+                  audioEnabled
+                    ? 'bg-cyber-magenta/20 text-cyber-magenta border border-cyber-magenta'
+                    : 'bg-cyber-surface text-cyber-muted border border-cyber-border'
+                }`}
+              >
+                {audioEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                <span>{audioEnabled ? 'MUTED' : 'UNMUTED'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Security & System Telemetry */}
+          <div className="space-y-2">
+            <span className="text-[10px] text-cyber-muted uppercase tracking-wider block border-b border-cyber-border/60 pb-1">
+              SUBSYSTEM TELEMETRY
+            </span>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="p-2.5 rounded bg-cyber-subsurface/40 border border-cyber-border">
+                <span className="text-cyber-muted block text-[10px]">AI ENGINE</span>
+                <span className="text-cyber-cyan font-bold flex items-center space-x-1 mt-0.5">
+                  <Cpu className="w-3 h-3" />
+                  <span>GEMINI GENAI 2.5</span>
+                </span>
+              </div>
+              <div className="p-2.5 rounded bg-cyber-subsurface/40 border border-cyber-border">
+                <span className="text-cyber-muted block text-[10px]">ZERO-LEAKAGE SHIELD</span>
+                <span className="text-cyber-green font-bold flex items-center space-x-1 mt-0.5">
+                  <ShieldCheck className="w-3 h-3" />
+                  <span>100% ENFORCED</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Data Reset Section */}
+          <div className="space-y-2 pt-2 border-t border-cyber-border">
+            <span className="text-[10px] text-cyber-muted uppercase tracking-wider block">
+              LOCAL DOSSIER PURGE
+            </span>
+            <p className="text-[11px] text-cyber-muted">
+              Clear your active investigation state and cached forensic logs from local memory.
+            </p>
+
+            {resetSuccess ? (
+              <div className="p-2.5 rounded bg-cyber-green/10 border border-cyber-green/40 text-cyber-green flex items-center space-x-2 text-xs">
+                <CheckCircle className="w-4 h-4" />
+                <span>TERMINAL REINITIALIZED: LOCAL DATA PURGED</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <CyberButton
+                  variant={resetConfirm ? 'danger' : 'ghost'}
+                  size="sm"
+                  icon={Trash2}
+                  onClick={handleReset}
+                  className="w-full sm:w-auto"
+                >
+                  {resetConfirm ? 'CONFIRM PURGE LOCAL CASE' : 'PURGE ACTIVE CASE DATA'}
+                </CyberButton>
+                {resetConfirm && (
+                  <button
+                    type="button"
+                    onClick={() => setResetConfirm(false)}
+                    className="text-cyber-muted hover:text-cyber-text text-xs underline"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end px-4 py-3 bg-cyber-subsurface border-t border-cyber-border">
+          <CyberButton variant="ghost" size="sm" onClick={onClose}>
+            CLOSE
+          </CyberButton>
+        </div>
+      </div>
+    </div>
+  );
+}

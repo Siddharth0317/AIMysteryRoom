@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import { Crosshair, ShieldAlert, AlertTriangle, ArrowLeft, Check } from 'lucide-react';
 import TerminalPanel from '../components/common/TerminalPanel';
 import CyberButton from '../components/common/CyberButton';
@@ -12,9 +12,14 @@ import { accuseMockSuspect } from '../utils/mockCase';
 
 export default function Accusation({ activeCase, onAccusationSubmitted }) {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const location = useLocation();
+  const { caseId: paramCaseId, id: paramId } = useParams();
+  const caseId = activeCase?.id || paramCaseId || paramId;
 
-  const [selectedSuspectId, setSelectedSuspectId] = useState(null);
+  const searchParams = new URLSearchParams(location.search);
+  const initialAccused = searchParams.get('accused');
+
+  const [selectedSuspectId, setSelectedSuspectId] = useState(initialAccused || null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -30,7 +35,7 @@ export default function Accusation({ activeCase, onAccusationSubmitted }) {
     );
   }
 
-  const { id: caseId, title, suspects = [], difficulty } = activeCase;
+  const { title, suspects = [], difficulty } = activeCase;
   const selectedSuspect = suspects.find((s) => s.id === selectedSuspectId);
 
   const handleSelectSuspect = (suspect) => {
@@ -64,7 +69,7 @@ export default function Accusation({ activeCase, onAccusationSubmitted }) {
       }
       setIsSubmitting(false);
       setIsModalOpen(false);
-      navigate(`/case/${caseId}/result`);
+      navigate(`/results/${caseId}`);
     } catch (err) {
       setError(err.message || 'Accusation transmission failed. Please retry.');
       setIsSubmitting(false);
@@ -84,11 +89,11 @@ export default function Accusation({ activeCase, onAccusationSubmitted }) {
             ACCUSE PERPETRATOR
           </h1>
           <p className="text-xs text-cyber-muted mt-1">
-            Case: {title} ({difficulty.toUpperCase()})
+            Case: {title} ({difficulty?.toUpperCase()})
           </p>
         </div>
 
-        <Link to={`/case/${caseId}`}>
+        <Link to={`/investigation/${caseId}`}>
           <CyberButton variant="ghost" size="sm" icon={ArrowLeft}>
             Back to Evidence
           </CyberButton>

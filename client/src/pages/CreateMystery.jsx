@@ -55,7 +55,7 @@ export default function CreateMystery({ onCaseCreated }) {
         onCaseCreated(newCase);
       }
       setIsGenerating(false);
-      navigate(`/case/${newCase.id}`);
+      navigate(`/investigation/${newCase.id}`);
     } catch (err) {
       setError(err.message || 'Case initialization failed. Please check parameters and try again.');
       setIsGenerating(false);

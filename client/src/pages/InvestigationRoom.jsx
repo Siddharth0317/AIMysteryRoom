@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { Shield, Compass, FileText, AlertTriangle, Sparkles, Key, CheckCircle, Crosshair } from 'lucide-react';
+import { Shield, Compass, FileText, AlertTriangle, Sparkles, Key, CheckCircle, Crosshair, Pin, MessageSquare, Send, Link as LinkIcon, Eye, EyeOff, Layers, UserCheck } from 'lucide-react';
 import TerminalPanel from '../components/common/TerminalPanel';
 import StatusBadge from '../components/common/StatusBadge';
 import CyberButton from '../components/common/CyberButton';
@@ -10,16 +10,66 @@ import HintTerminal from '../components/mystery/HintTerminal';
 import EmptyState from '../components/common/EmptyState';
 import ErrorBanner from '../components/common/ErrorBanner';
 import casesApi from '../api/casesApi';
-import { discoverMockClue, useMockHint } from '../utils/mockCase';
+import { discoverMockClue, useMockHint, getActiveMockCase } from '../utils/mockCase';
 
 export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { caseId: paramCaseId, id: paramId } = useParams();
+  const currentCaseId = activeCase?.id || paramCaseId || paramId;
 
-  const [activeTab, setActiveTab] = useState('all'); // mobile tab: 'story', 'suspects', 'clues', 'hints'
+  const [activeTab, setActiveTab] = useState('board'); // 'board', 'files', 'suspects', 'hints'
   const [decryptingId, setDecryptingId] = useState(null);
   const [hintLoading, setHintLoading] = useState(false);
   const [actionError, setActionError] = useState(null);
+
+  // Murder Board States inspired by Cyber Noir Detective UI
+  const [pinnedIds, setPinnedIds] = useState(new Set());
+  const [showNeuralStrings, setShowNeuralStrings] = useState(true);
+  const [filterNoise, setFilterNoise] = useState(false);
+  const [activeInterrogationSuspect, setActiveInterrogationSuspect] = useState(null);
+  const [interrogationInput, setInterrogationInput] = useState('');
+  const [interrogationLogs, setInterrogationLogs] = useState({});
+  const [selectedAccusedId, setSelectedAccusedId] = useState('');
+  const [initialLoading, setInitialLoading] = useState(!activeCase && Boolean(currentCaseId));
+
+  // Initialize first suspect as default pinned or interrogated
+  useEffect(() => {
+    if (activeCase?.suspects?.length > 0 && pinnedIds.size === 0) {
+      const initialPinned = new Set([
+        activeCase.suspects[0].id,
+        ...(activeCase.clues?.[0] ? [activeCase.clues[0].id] : [])
+      ]);
+      setPinnedIds(initialPinned);
+      setActiveInterrogationSuspect(activeCase.suspects[0]);
+    }
+  }, [activeCase]);
+
+  // Load case if navigated directly by URL and activeCase is missing
+  useEffect(() => {
+    if (!activeCase && currentCaseId) {
+      setInitialLoading(true);
+      casesApi.getCase(currentCaseId)
+        .then((fetched) => {
+          if (onCaseUpdated) onCaseUpdated(fetched);
+          setInitialLoading(false);
+        })
+        .catch(() => {
+          const local = getActiveMockCase();
+          if (local && local.id === currentCaseId && onCaseUpdated) {
+            onCaseUpdated(local);
+          }
+          setInitialLoading(false);
+        });
+    }
+  }, [currentCaseId, activeCase, onCaseUpdated]);
+
+  if (initialLoading) {
+    return (
+      <div className="py-20 text-center font-mono text-xs text-cyber-cyan animate-pulse">
+        CALIBRATING NEURAL DETECTIVE INTERFACE // DECRYPTING CASE DATA...
+      </div>
+    );
+  }
 
   if (!activeCase) {
     return (
@@ -49,6 +99,15 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
   const discoveredCluesCount = clues.filter((c) => c.discovered).length;
   const totalClues = clues.length;
 
+  const togglePin = (id) => {
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   // Clue discovery handler
   const handleDiscoverClue = async (clueId) => {
     setActionError(null);
@@ -71,6 +130,8 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
         const updated = discoverMockClue(caseId, clueId);
         if (onCaseUpdated) onCaseUpdated(updated);
       }
+      // Auto-pin newly discovered clue to the board
+      setPinnedIds((prev) => new Set([...prev, clueId]));
     } catch (err) {
       setActionError(err.message || 'Failed to decrypt clue segment.');
     } finally {
@@ -119,52 +180,80 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
     }
   };
 
+  const handleInterrogationSubmit = (e) => {
+    e.preventDefault();
+    if (!interrogationInput.trim() || !activeInterrogationSuspect) return;
+
+    const query = interrogationInput.trim();
+    const suspectId = activeInterrogationSuspect.id;
+    const prevLogs = interrogationLogs[suspectId] || [];
+
+    const newResponse = `[DECRYPTED STATEMENT] "${activeInterrogationSuspect.alibi || 'I have already shared my whereabouts with terminal investigators.'}"`;
+
+    setInterrogationLogs({
+      ...interrogationLogs,
+      [suspectId]: [
+        ...prevLogs,
+        { sender: 'detective', text: query },
+        { sender: 'suspect', text: newResponse },
+      ],
+    });
+    setInterrogationInput('');
+  };
+
+  const handleIssueWarrant = () => {
+    if (selectedAccusedId) {
+      navigate(`/accuse/${caseId}?accused=${selectedAccusedId}`);
+    } else {
+      navigate(`/accuse/${caseId}`);
+    }
+  };
+
   return (
-    <div className="space-y-6 font-mono">
-      {/* Top Case Header Banner */}
-      <div className="bg-cyber-surface border border-cyber-border rounded-lg p-4 sm:p-6 shadow-terminal">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
+    <div className="space-y-4 font-mono">
+      {/* Top Banner Toolbar */}
+      <div className="bg-cyber-surface border border-cyber-border rounded-lg p-3 sm:p-4 shadow-terminal">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="space-y-1 min-w-0">
             <div className="flex items-center space-x-2 text-xs">
-              <span className="text-cyber-muted">CASE ARCHIVE:</span>
+              <span className="text-cyber-muted">CASE ID:</span>
               <span className="text-cyber-cyan font-bold">#{caseId.slice(0, 10)}</span>
               <span className="text-cyber-border">|</span>
               <StatusBadge size="xs" variant={status === 'completed' ? 'green' : 'amber'}>
                 {status.toUpperCase()}
               </StatusBadge>
               <StatusBadge size="xs" variant="cyan">
-                {difficulty.toUpperCase()}
+                {difficulty.toUpperCase()} TIER
               </StatusBadge>
             </div>
-
-            <h1 className="text-xl sm:text-2xl font-display font-bold text-cyber-text tracking-wide uppercase">
+            <h1 className="text-lg sm:text-xl font-display font-bold text-cyber-text tracking-wide uppercase truncate">
               {title}
             </h1>
           </div>
 
           {/* Quick Metrics & Proceed Action */}
-          <div className="flex items-center space-x-4 shrink-0">
-            <div className="hidden sm:flex items-center space-x-4 text-xs bg-cyber-subsurface px-3 py-2 rounded border border-cyber-border">
+          <div className="flex items-center space-x-3 shrink-0">
+            <div className="flex items-center space-x-3 text-xs bg-cyber-subsurface px-3 py-1.5 rounded border border-cyber-border">
               <div>
-                <span className="text-[10px] text-cyber-muted block">EVIDENCE</span>
+                <span className="text-[9px] text-cyber-muted block">EVIDENCE</span>
                 <span className="font-bold text-cyber-green">
                   {discoveredCluesCount}/{totalClues}
                 </span>
               </div>
               <div className="border-l border-cyber-border pl-3">
-                <span className="text-[10px] text-cyber-muted block">HINTS</span>
+                <span className="text-[9px] text-cyber-muted block">HINTS</span>
                 <span className="font-bold text-cyber-amber">
                   {hintsUsed}/{maxHints}
                 </span>
               </div>
             </div>
 
-            <Link to={`/case/${caseId}/accuse`}>
+            <Link to={`/accuse/${caseId}`}>
               <CyberButton
                 variant="danger"
-                size="md"
+                size="sm"
                 icon={Crosshair}
-                className="shadow-md shadow-cyber-red/20"
+                className="shadow-md shadow-cyber-red/20 text-xs"
               >
                 ACCUSE SUSPECT
               </CyberButton>
@@ -181,130 +270,384 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
         />
       )}
 
-      {/* Mobile Tab Selector (Visible on mobile only) */}
-      <div className="flex sm:hidden overflow-x-auto space-x-2 pb-2 border-b border-cyber-border text-xs">
-        {['all', 'story', 'suspects', 'clues', 'hints'].map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`px-3 py-1.5 rounded uppercase font-bold shrink-0 transition-colors ${
-              activeTab === tab
-                ? 'bg-cyber-cyan text-cyber-bg'
-                : 'bg-cyber-surface text-cyber-muted border border-cyber-border'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* 3-Column Desktop Grid Layout (Collapses on small viewports) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Column 1: Case Briefing & Story (4 Cols) */}
-        <div className={`lg:col-span-4 space-y-6 ${
-          activeTab !== 'all' && activeTab !== 'story' ? 'hidden sm:block' : ''
-        }`}>
+      {/* Main 3-Column Murder Board Grid (Collapses on small viewports) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Left Column (3 Cols): CASE FILES & BRIEFING */}
+        <div className="lg:col-span-3 space-y-4">
           <TerminalPanel
-            title="MISSION BRIEFING &amp; TIMELINE"
-            subtitle="CLASSIFIED INCIDENT DOSSIER"
-            badge={<StatusBadge size="xs" variant="cyan">BRIEFING</StatusBadge>}
+            title="CASE FILES"
+            subtitle="CLASSIFIED BRIEFING"
+            badge={<StatusBadge size="xs" variant="cyan">DOSSIER</StatusBadge>}
           >
-            <div className="space-y-4 text-xs leading-relaxed text-cyber-muted">
+            <div className="space-y-3 text-xs leading-relaxed">
               <div>
-                <span className="text-[11px] font-bold text-cyber-text uppercase block mb-1">
+                <span className="text-[10px] font-bold text-cyber-text uppercase block mb-1">
                   Incident Premise:
                 </span>
-                <p className="bg-cyber-subsurface p-2.5 rounded border border-cyber-border/60 text-cyber-text">
+                <p className="bg-cyber-subsurface p-2 rounded border border-cyber-border/60 text-cyber-text text-[11px] leading-relaxed">
                   {premise}
                 </p>
               </div>
 
               <div>
-                <span className="text-[11px] font-bold text-cyber-text uppercase block mb-1">
-                  Crime Reconstruction Narrative:
+                <span className="text-[10px] font-bold text-cyber-text uppercase block mb-1">
+                  Crime Reconstruction:
                 </span>
-                <p className="whitespace-pre-line leading-relaxed">
+                <p className="whitespace-pre-line leading-relaxed text-cyber-muted text-[11px] max-h-48 overflow-y-auto pr-1">
                   {story}
                 </p>
               </div>
+            </div>
+          </TerminalPanel>
 
-              <div className="pt-2 border-t border-cyber-border/60 flex items-center justify-between text-[11px]">
-                <span className="text-cyber-muted">OBJECTIVE:</span>
-                <span className="text-cyber-cyan font-bold">ISOLATE TRUE CULPRIT</span>
+          {/* Forensic Evidence Clues List */}
+          <TerminalPanel
+            title={`DISCOVERED CLUES (${discoveredCluesCount}/${totalClues})`}
+            subtitle="FORENSIC DECRYPTION"
+            badge={
+              <StatusBadge size="xs" variant={discoveredCluesCount === totalClues ? 'green' : 'cyan'}>
+                {Math.round((discoveredCluesCount / totalClues) * 100)}%
+              </StatusBadge>
+            }
+          >
+            <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+              {clues.map((clue, idx) => {
+                const isPinned = pinnedIds.has(clue.id);
+                return (
+                  <div
+                    key={clue.id}
+                    className={`p-2.5 rounded border text-xs transition-all ${
+                      clue.discovered
+                        ? 'bg-cyber-subsurface/90 border-cyber-green/40'
+                        : 'bg-cyber-surface/40 border-cyber-border'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="font-bold text-cyber-text text-[11px] truncate">
+                        {clue.title}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => togglePin(clue.id)}
+                        className={`p-1 rounded text-[10px] ${
+                          isPinned ? 'text-cyber-cyan bg-cyber-cyan/20' : 'text-cyber-muted hover:text-cyber-text'
+                        }`}
+                        title={isPinned ? 'Unpin from board' : 'Pin to murder board'}
+                      >
+                        <Pin className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {clue.discovered ? (
+                      <p className="text-[11px] text-cyber-muted leading-relaxed">
+                        {clue.description}
+                      </p>
+                    ) : (
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[10px] text-cyber-amber">ENCRYPTED DATA</span>
+                        <CyberButton
+                          variant="ghost"
+                          size="xs"
+                          icon={Key}
+                          onClick={() => handleDiscoverClue(clue.id)}
+                          disabled={decryptingId === clue.id}
+                        >
+                          {decryptingId === clue.id ? 'DECRYPTING...' : 'DECRYPT (+5 PTS)'}
+                        </CyberButton>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </TerminalPanel>
+
+          {/* Hint Terminal */}
+          <HintTerminal
+            hints={hints}
+            hintsUsed={hintsUsed}
+            maxHints={maxHints}
+            onRequestHint={handleRequestHint}
+            isLoading={hintLoading}
+          />
+        </div>
+
+        {/* Center Column (6 Cols): INTERACTIVE MURDER BOARD */}
+        <div className="lg:col-span-6 space-y-4">
+          <TerminalPanel
+            title="MURDER BOARD"
+            subtitle="NEURAL EVIDENCE MATRIX"
+            badge={<StatusBadge size="xs" variant="magenta">ACTIVE BOARD</StatusBadge>}
+            scanlines
+          >
+            {/* Murder Board Controls Toolbar (matching screenshot: AUTO-LINK, HIDE NOISE, CLEAR STRINGS) */}
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-3 mb-3 border-b border-cyber-border text-xs">
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNeuralStrings((prev) => !prev)}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
+                    showNeuralStrings
+                      ? 'bg-cyber-cyan/20 text-cyber-cyan border-cyber-cyan'
+                      : 'bg-cyber-surface text-cyber-muted border-cyber-border'
+                  }`}
+                >
+                  <LinkIcon className="w-3 h-3" />
+                  <span>{showNeuralStrings ? 'STRINGS ON' : 'AUTO-LINK'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFilterNoise((prev) => !prev)}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
+                    filterNoise
+                      ? 'bg-cyber-magenta/20 text-cyber-magenta border-cyber-magenta'
+                      : 'bg-cyber-surface text-cyber-muted border-cyber-border'
+                  }`}
+                >
+                  {filterNoise ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                  <span>{filterNoise ? 'SHOWING PINNED' : 'HIDE NOISE'}</span>
+                </button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setPinnedIds(new Set())}
+                className="text-[10px] text-cyber-muted hover:text-cyber-red px-2 py-1 transition-colors"
+              >
+                CLEAR STRINGS
+              </button>
+            </div>
+
+            {/* Murder Board Corkboard Area */}
+            <div className="relative min-h-[360px] bg-cyber-bg/90 rounded-lg p-4 border border-cyber-border/70 overflow-hidden">
+              {/* Retro corkboard grid background */}
+              <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none" />
+
+              {/* Neural connecting strings (SVG paths connecting pinned suspects and clues) */}
+              {showNeuralStrings && pinnedIds.size > 1 && (
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-70">
+                  <line
+                    x1="25%"
+                    y1="35%"
+                    x2="70%"
+                    y2="28%"
+                    stroke="#35F2FF"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 2"
+                  />
+                  <line
+                    x1="70%"
+                    y1="28%"
+                    x2="50%"
+                    y2="75%"
+                    stroke="#FF3DF2"
+                    strokeWidth="1.5"
+                    strokeDasharray="3 3"
+                  />
+                  <line
+                    x1="25%"
+                    y1="35%"
+                    x2="50%"
+                    y2="75%"
+                    stroke="#A3FF12"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+              )}
+
+              {/* Pinned Suspects & Evidence Cards in Corkboard style */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
+                {suspects.slice(0, 4).map((suspect, idx) => {
+                  const isPinned = pinnedIds.has(suspect.id);
+                  if (filterNoise && !isPinned) return null;
+
+                  return (
+                    <div
+                      key={suspect.id}
+                      onClick={() => setActiveInterrogationSuspect(suspect)}
+                      className={`relative p-3 rounded-lg border cursor-pointer transition-all ${
+                        activeInterrogationSuspect?.id === suspect.id
+                          ? 'bg-cyber-surface border-cyber-cyan shadow-neon-cyan scale-[1.02]'
+                          : 'bg-cyber-surface/75 border-cyber-border hover:border-cyber-cyan/50'
+                      }`}
+                    >
+                      {/* Red / Cyan Pin Indicator */}
+                      <div className="absolute -top-1.5 left-4 w-3 h-3 rounded-full bg-cyber-red border border-white shadow-sm flex items-center justify-center">
+                        <div className="w-1 h-1 rounded-full bg-white" />
+                      </div>
+
+                      <div className="flex items-start justify-between gap-2 pt-1">
+                        <div>
+                          <span className="text-[10px] text-cyber-cyan uppercase font-bold block">
+                            SUSPECT #{idx + 1}
+                          </span>
+                          <h4 className="font-bold text-cyber-text text-xs">{suspect.name}</h4>
+                          <span className="text-[10px] text-cyber-muted block">{suspect.role}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            togglePin(suspect.id);
+                          }}
+                          className={`p-1 rounded text-[10px] ${
+                            isPinned ? 'text-cyber-cyan bg-cyber-cyan/20' : 'text-cyber-muted'
+                          }`}
+                          title="Pin/unpin suspect"
+                        >
+                          <Pin className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="mt-2 text-[10px] text-cyber-muted line-clamp-2">
+                        <span className="text-cyber-amber font-bold">ALIBI: </span>
+                        {suspect.alibi}
+                      </div>
+
+                      <div className="mt-2 pt-1.5 border-t border-cyber-border/60 flex items-center justify-between text-[9px]">
+                        <span className="text-cyber-cyan">INTERROGATE →</span>
+                        {isPinned && <span className="text-cyber-green font-bold">PINNED</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Interrogation Terminal Floating Dialog (matching screenshot) */}
+              {activeInterrogationSuspect && (
+                <div className="mt-4 p-3 rounded-lg bg-cyber-subsurface border border-cyber-cyan/70 shadow-lg relative z-20 text-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-cyber-border mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded bg-cyber-cyan/20 border border-cyber-cyan flex items-center justify-center text-cyber-cyan text-[10px]">
+                        #
+                      </div>
+                      <div>
+                        <span className="font-bold text-cyber-text text-xs">
+                          {activeInterrogationSuspect.name}
+                        </span>
+                        <span className="text-[9px] text-cyber-green block">CHANNEL SECURED</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveInterrogationSuspect(null)}
+                      className="text-cyber-muted hover:text-cyber-cyan text-xs"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {/* Transcript History */}
+                  <div className="space-y-2 max-h-36 overflow-y-auto pr-1 text-[11px] mb-3">
+                    <div className="bg-cyber-surface p-2 rounded border border-cyber-border/70 text-cyber-text">
+                      <span className="text-cyber-cyan font-bold block text-[10px]">
+                        {activeInterrogationSuspect.name}:
+                      </span>
+                      Detective, you requested my testimony. What do you want to inquire about?
+                    </div>
+
+                    <div className="bg-cyber-surface p-2 rounded border border-cyber-border/70 text-cyber-muted">
+                      <span className="text-cyber-amber font-bold block text-[10px]">
+                        STATED MOTIVE / PROFILE:
+                      </span>
+                      {activeInterrogationSuspect.motive || 'No explicit motive confirmed.'}
+                    </div>
+
+                    {(interrogationLogs[activeInterrogationSuspect.id] || []).map((entry, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-2 rounded border ${
+                          entry.sender === 'detective'
+                            ? 'bg-cyber-cyan/10 border-cyber-cyan/40 text-cyber-cyan ml-4'
+                            : 'bg-cyber-surface border-cyber-border text-cyber-text'
+                        }`}
+                      >
+                        {entry.text}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Simulated Interrogation Query Input */}
+                  <form onSubmit={handleInterrogationSubmit} className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={interrogationInput}
+                      onChange={(e) => setInterrogationInput(e.target.value)}
+                      placeholder="Type interrogation query..."
+                      className="flex-1 bg-cyber-bg border border-cyber-border rounded px-3 py-1.5 text-xs text-cyber-text focus:outline-none focus:border-cyber-cyan font-mono"
+                    />
+                    <CyberButton variant="primary" size="xs" icon={Send} type="submit">
+                      SEND
+                    </CyberButton>
+                  </form>
+                </div>
+              )}
             </div>
           </TerminalPanel>
         </div>
 
-        {/* Column 2: Suspects Panel (4 Cols) */}
-        <div className={`lg:col-span-4 space-y-4 ${
-          activeTab !== 'all' && activeTab !== 'suspects' ? 'hidden sm:block' : ''
-        }`}>
+        {/* Right Column (3 Cols): SUSPECTS DOSSIER & FINAL VERDICT */}
+        <div className="lg:col-span-3 space-y-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-bold uppercase tracking-wider text-cyber-cyan">
-              IDENTIFIED PERSONS OF INTEREST ({suspects.length})
+              SUSPECTS ({suspects.length})
             </h2>
-            <span className="text-[11px] text-cyber-muted">VERIFY ALIBIS</span>
+            <span className="text-[10px] text-cyber-muted">VERIFY ALIBIS</span>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
             {suspects.map((suspect) => (
               <SuspectCard
                 key={suspect.id}
                 suspect={suspect}
+                onSelectSuspect={(s) => {
+                  setSelectedAccusedId(s.id);
+                  setActiveInterrogationSuspect(s);
+                }}
               />
             ))}
           </div>
-        </div>
 
-        {/* Column 3: Evidence Matrix & Tactical Hint Console (4 Cols) */}
-        <div className={`lg:col-span-4 space-y-6 ${
-          activeTab !== 'all' && activeTab !== 'clues' && activeTab !== 'hints' ? 'hidden sm:block' : ''
-        }`}>
-          {/* Clues Evidence Subpanel */}
-          <div className={activeTab === 'hints' ? 'hidden sm:block' : ''}>
-            <TerminalPanel
-              title={`FORENSIC EVIDENCE (${discoveredCluesCount}/${totalClues})`}
-              subtitle="DECRYPT FOR INSIGHTS &amp; SCORE"
-              badge={
-                <StatusBadge size="xs" variant={discoveredCluesCount === totalClues ? 'green' : 'cyan'}>
-                  {Math.round((discoveredCluesCount / totalClues) * 100)}%
-                </StatusBadge>
-              }
-            >
-              {/* Progress bar */}
-              <div className="w-full bg-cyber-subsurface h-1.5 rounded-full overflow-hidden mb-4 border border-cyber-border">
-                <div
-                  className="bg-cyber-green h-full transition-all duration-300"
-                  style={{ width: `${(discoveredCluesCount / totalClues) * 100}%` }}
-                />
-              </div>
+          {/* FINAL VERDICT PANEL (matching bottom right of screenshot) */}
+          <TerminalPanel
+            title="FINAL VERDICT"
+            subtitle="ISSUE ACCUSATION WARRANT"
+            badge={<StatusBadge size="xs" variant="red">CRITICAL</StatusBadge>}
+          >
+            <div className="space-y-3 text-xs">
+              <label className="text-[10px] text-cyber-muted uppercase block">
+                Designate Primary Suspect:
+              </label>
 
-              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-                {clues.map((clue, idx) => (
-                  <ClueCard
-                    key={clue.id}
-                    clue={clue}
-                    index={idx}
-                    onDiscover={handleDiscoverClue}
-                    isDecrypting={decryptingId === clue.id}
-                  />
+              <select
+                value={selectedAccusedId}
+                onChange={(e) => setSelectedAccusedId(e.target.value)}
+                className="w-full bg-cyber-bg border border-cyber-border rounded px-3 py-2 text-xs text-cyber-text focus:outline-none focus:border-cyber-red font-mono"
+              >
+                <option value="">Select Accused...</option>
+                {suspects.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.role})
+                  </option>
                 ))}
-              </div>
-            </TerminalPanel>
-          </div>
+              </select>
 
-          {/* Hint Terminal Subpanel */}
-          <div className={activeTab === 'clues' ? 'hidden sm:block' : ''}>
-            <HintTerminal
-              hints={hints}
-              hintsUsed={hintsUsed}
-              maxHints={maxHints}
-              onRequestHint={handleRequestHint}
-              isLoading={hintLoading}
-            />
-          </div>
+              <CyberButton
+                variant="danger"
+                size="md"
+                icon={Crosshair}
+                onClick={handleIssueWarrant}
+                className="w-full shadow-lg shadow-cyber-red/30"
+              >
+                ISSUE WARRANT
+              </CyberButton>
+
+              <p className="text-[10px] text-cyber-muted leading-tight">
+                Accusation triggers authoritative backend verification. Case locks permanently upon submission.
+              </p>
+            </div>
+          </TerminalPanel>
         </div>
       </div>
     </div>

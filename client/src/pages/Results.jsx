@@ -10,7 +10,8 @@ import casesApi from '../api/casesApi';
 
 export default function Results({ activeCase, latestResult }) {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { caseId, id } = useParams();
+  const currentCaseId = caseId || id || activeCase?.id;
 
   const [fetchedResult, setFetchedResult] = useState(null);
   const [loading, setLoading] = useState(!latestResult && !activeCase?.result);
@@ -18,8 +19,8 @@ export default function Results({ activeCase, latestResult }) {
   const result = latestResult || activeCase?.result || fetchedResult;
 
   useEffect(() => {
-    if (!result && id) {
-      casesApi.getCaseResult(id)
+    if (!result && currentCaseId) {
+      casesApi.getCaseResult(currentCaseId)
         .then((data) => {
           setFetchedResult(data);
           setLoading(false);
@@ -30,7 +31,7 @@ export default function Results({ activeCase, latestResult }) {
     } else {
       setLoading(false);
     }
-  }, [id, result]);
+  }, [currentCaseId, result]);
 
   if (loading) {
     return (
