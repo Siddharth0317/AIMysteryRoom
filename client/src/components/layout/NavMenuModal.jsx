@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { X, Home, PlusCircle, Compass, Crosshair, Award, BookOpen, Shield, ChevronRight, Terminal } from 'lucide-react';
+import { X, Home, PlusCircle, Compass, Crosshair, Award, BookOpen, Shield, ChevronRight, Terminal, Archive, Clock } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 import CyberButton from '../common/CyberButton';
+import { getCaseArchive } from '../../utils/mockCase';
 
 export default function NavMenuModal({ isOpen, onClose, activeCase }) {
   const navigate = useNavigate();
+  const [archivedCases, setArchivedCases] = useState([]);
+  const [showArchive, setShowArchive] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setArchivedCases(getCaseArchive());
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -26,11 +35,11 @@ export default function NavMenuModal({ isOpen, onClose, activeCase }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm sm:max-w-md bg-cyber-surface border border-cyber-cyan/40 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs mt-14"
+        className="w-full max-w-sm sm:max-w-md bg-cyber-surface border border-cyber-cyan/40 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs mt-14 max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Menu Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-cyber-subsurface border-b border-cyber-border">
+        <div className="flex items-center justify-between px-4 py-3 bg-cyber-subsurface border-b border-cyber-border shrink-0">
           <div className="flex items-center space-x-2 text-cyber-cyan">
             <Terminal className="w-4 h-4" />
             <h2 id="nav-menu-title" className="font-display font-bold tracking-wider text-sm uppercase text-cyber-text">
@@ -47,8 +56,8 @@ export default function NavMenuModal({ isOpen, onClose, activeCase }) {
           </button>
         </div>
 
-        {/* Menu Items */}
-        <div className="p-4 space-y-2">
+        {/* Scrollable Content */}
+        <div className="p-4 space-y-2 overflow-y-auto flex-1">
           {/* Home */}
           <button
             type="button"
@@ -152,10 +161,60 @@ export default function NavMenuModal({ isOpen, onClose, activeCase }) {
             </div>
             {isCaseCompleted && <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-green" />}
           </button>
+
+          {/* Case Archive Accordion */}
+          <div className="pt-2 border-t border-cyber-border/60">
+            <button
+              type="button"
+              onClick={() => setShowArchive((prev) => !prev)}
+              className="w-full flex items-center justify-between p-2.5 rounded bg-cyber-subsurface/40 hover:bg-cyber-surface border border-cyber-border text-left transition-all"
+            >
+              <div className="flex items-center space-x-2 text-cyber-cyan">
+                <Archive className="w-3.5 h-3.5" />
+                <span className="font-bold text-[11px] uppercase">
+                  SAVED CASE ARCHIVE ({archivedCases.length})
+                </span>
+              </div>
+              <span className="text-[10px] text-cyber-muted">
+                {showArchive ? 'COLLAPSE ▲' : 'EXPAND ▼'}
+              </span>
+            </button>
+
+            {showArchive && (
+              <div className="mt-2 space-y-1.5 pl-1 pr-1 max-h-40 overflow-y-auto">
+                {archivedCases.length === 0 ? (
+                  <p className="text-[10px] text-cyber-muted italic p-2 text-center">
+                    No cases archived yet. Initialize a mystery to populate.
+                  </p>
+                ) : (
+                  archivedCases.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => handleNav(c.status === 'completed' ? `/results/${c.id}` : `/investigation/${c.id}`)}
+                      className="w-full p-2 rounded bg-cyber-subsurface/80 hover:bg-cyber-cyan/10 border border-cyber-border/60 hover:border-cyber-cyan text-left transition-all flex items-center justify-between"
+                    >
+                      <div className="truncate mr-2">
+                        <span className="font-bold text-[11px] text-cyber-text block truncate">
+                          {c.title || c.premise?.slice(0, 30)}
+                        </span>
+                        <span className="text-[9px] text-cyber-muted">
+                          ID: #{c.id?.slice(0, 8)} • {c.difficulty?.toUpperCase()}
+                        </span>
+                      </div>
+                      <StatusBadge size="xs" variant={c.status === 'completed' ? 'green' : 'amber'}>
+                        {c.status === 'completed' ? 'SOLVED' : 'ACTIVE'}
+                      </StatusBadge>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Security & System Info Footer */}
-        <div className="px-4 py-3 bg-cyber-subsurface border-t border-cyber-border flex items-center justify-between text-[10px] text-cyber-muted">
+        <div className="px-4 py-3 bg-cyber-subsurface border-t border-cyber-border flex items-center justify-between text-[10px] text-cyber-muted shrink-0">
           <div className="flex items-center space-x-1.5">
             <Shield className="w-3.5 h-3.5 text-cyber-cyan" />
             <span>ZERO-LEAKAGE ACTIVE</span>

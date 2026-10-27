@@ -367,12 +367,48 @@ export function clearActiveMockCase() {
   }
 }
 
+const ARCHIVE_KEY = "AIMysteryRoom_CaseArchive";
+
 /**
- * Saves case to localStorage
+ * Retrieves the history of all cases saved in this terminal
+ */
+export function getCaseArchive() {
+  try {
+    const raw = localStorage.getItem(ARCHIVE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (err) {
+    console.warn("Could not read case archive", err);
+    return [];
+  }
+}
+
+/**
+ * Saves a case to the permanent Case Archive list
+ */
+export function saveToCaseArchive(caseData) {
+  if (!caseData || !caseData.id) return;
+  try {
+    const archive = getCaseArchive();
+    const existingIndex = archive.findIndex((c) => c.id === caseData.id);
+    if (existingIndex !== -1) {
+      archive[existingIndex] = { ...caseData, updatedAt: new Date().toISOString() };
+    } else {
+      archive.unshift({ ...caseData, savedAt: new Date().toISOString() });
+    }
+    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive.slice(0, 30)));
+  } catch (err) {
+    console.warn("Could not append to case archive", err);
+  }
+}
+
+/**
+ * Saves case to localStorage and syncs with archive
  */
 export function saveMockCase(caseData) {
+  if (!caseData) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(caseData));
+    saveToCaseArchive(caseData);
   } catch (err) {
     console.warn("Could not save to localStorage", err);
   }
