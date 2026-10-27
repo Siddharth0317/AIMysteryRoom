@@ -140,4 +140,63 @@ test('API Integration: Full Case Lifecycle and Secrecy Verification', async (t) 
     assert.strictEqual(resultRes.body.verdict, 'correct');
     assert.strictEqual(resultRes.body.score, 85);
   });
+
+  // 9. Edge Cases: Non-existent case, unknown suspect, and invalid clue
+  await t.test('GET /api/cases/:id rejects non-existent case with 404 CASE_NOT_FOUND', async () => {
+    const res = await request(app)
+      .get('/api/cases/case_nonexistent_999')
+      .expect(404);
+    assert.strictEqual(res.body.error.code, 'CASE_NOT_FOUND');
+  });
+
+  await t.test('POST /api/cases/:id/clues/:clueId/discover rejects invalid clue with 404 CLUE_NOT_FOUND', async () => {
+    // Create an active case for testing invalid clue
+    const caseRes = await request(app)
+      .post('/api/cases')
+      .send({ premise: 'Stolen data crystal from vault 4', difficulty: 'easy' })
+      .expect(201);
+    const cId = caseRes.body.case.id;
+
+    const res = await request(app)
+      .post(`/api/cases/${cId}/clues/clue_invalid_99/discover`)
+      .expect(404);
+    assert.strictEqual(res.body.error.code, 'CLUE_NOT_FOUND');
+  });
+
+  await t.test('POST /api/cases/:id/accuse rejects unknown suspect with 404 SUSPECT_NOT_FOUND', async () => {
+    const caseRes = await request(app)
+      .post('/api/cases')
+      .send({ premise: 'Cybernetic robbery at NeoBank', difficulty: 'easy' })
+      .expect(201);
+    const cId = caseRes.body.case.id;
+
+    const res = await request(app)
+      .post(`/api/cases/${cId}/accuse`)
+      .send({ suspectId: 'suspect_ghost_not_in_case' })
+      .expect(404);
+    assert.strictEqual(res.body.error.code, 'SUSPECT_NOT_FOUND');
+  });
+
+  // 10. Anti-Cheat: Client attempts to tamper with score or verdict
+  await t.test('Anti-Cheat: Server ignores client-supplied score and verdict fields', async () => {
+    const caseRes = await request(app)
+      .post('/api/cases')
+      .send({ premise: 'Sabotage at orbital space dock', difficulty: 'medium' })
+      .expect(201);
+    const cId = caseRes.body.case.id;
+
+    // Client maliciously passes score: 99999 and verdict: 'correct'
+    const res = await request(app)
+      .post(`/api/cases/${cId}/accuse`)
+      .send({
+        suspectId: 'suspect_2', // Incorrect suspect
+        score: 99999,
+        verdict: 'correct',
+      })
+      .expect(200);
+
+    // Backend must evaluate authoritatively (incorrect suspect gives 0 points)
+    assert.strictEqual(res.body.verdict, 'incorrect');
+    assert.strictEqual(res.body.score, 0, 'Tampered score must be completely ignored');
+  });
 });
