@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #070A12;
+    color: #EAF2FF;
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Custom Cyberpunk Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #070A12;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #111B2E;
+    border: 1px solid rgba(53, 242, 255, 0.3);
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(53, 242, 255, 0.4);
+    box-shadow: 0 0 10px rgba(53, 242, 255, 0.5);
+  }
+}
+
+@layer utilities {
+  /* Subtle CRT Scanline overlay */
+  .cyber-scanlines {
+    background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%, 
+      rgba(0, 0, 0, 0.25) 50%
+    ), linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.01),
+      rgba(0, 0, 255, 0.03)
+    );
+    background-size: 100% 3px, 6px 100%;
+    pointer-events: none;
+  }
+
+  /* Cyber Grid Background */
+  .cyber-grid {
+    background-image: 
+      linear-gradient(to right, rgba(53, 242, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(53, 242, 255, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* Glitch Text Effect */
+  .text-shadow-neon {
+    text-shadow: 0 0 8px rgba(53, 242, 255, 0.6), 0 0 16px rgba(53, 242, 255, 0.3);
+  }
+
+  .text-shadow-magenta {
+    text-shadow: 0 0 8px rgba(255, 61, 242, 0.6), 0 0 16px rgba(255, 61, 242, 0.3);
+  }
+}

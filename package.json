@@ -1,0 +1,24 @@
+{
+  "name": "ai-mystery-room",
+  "version": "1.0.0",
+  "description": "AI-powered mystery investigation game with a Cyberpunk / Sci-Fi Hacker Terminal UI",
+  "private": true,
+  "scripts": {
+    "client": "npm --prefix client run dev",
+    "server": "npm --prefix server run dev",
+    "test:server": "npm --prefix server test",
+    "test:client": "npm --prefix client test",
+    "install:all": "npm --prefix client install && npm --prefix server install"
+  },
+  "keywords": [
+    "ai",
+    "mystery",
+    "game",
+    "gemini",
+    "cyberpunk",
+    "react",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC"
+}
