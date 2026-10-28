@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
 import { Case } from '../models/Case.js';
 import { isDbConnected } from '../config/db.js';
-import { DIFFICULTY_RULES, ERROR_CODES } from '../constants/gameRules.js';
+import { DIFFICULTY_RULES, INTERROGATION_LIMITS, ERROR_CODES } from '../constants/gameRules.js';
 import { calculateScore } from './scoringService.js';
 import { toPlayerSafeCase, toCaseResult } from './caseSerializer.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { generateMysteryCase } from './geminiService.js';
+import { generateMysteryCase, generateInterrogationResponse } from './geminiService.js';
 
 // In-memory fallback repository for test suites or offline development
 const memoryCases = new Map();
@@ -51,6 +51,7 @@ function createPhase2Template(premise, difficulty) {
     evidenceMapping: clues.map(c => ({ clueId: c.id, supports: `Supports culpability of suspect_1` })),
     discoveredClueIds: [],
     hintsUsed: 0,
+    interrogations: [],
     status: 'active',
     score: 0,
     isCorrect: null,
@@ -73,6 +74,7 @@ export async function createCase({ premise, difficulty, aiClient = null }) {
         id: caseId,
         discoveredClueIds: [],
         hintsUsed: 0,
+        interrogations: [],
         status: 'active',
         score: 0,
         isCorrect: null,
@@ -199,6 +201,76 @@ export async function requestHint(caseId) {
       text: nextHint.text,
     },
     progress: safeCase.progress,
+  };
+}
+
+export async function interrogateSuspect(caseId, suspectId, { question, category = 'general' }, options = {}) {
+  const caseDoc = await getCaseById(caseId);
+
+  if (caseDoc.status === 'completed') {
+    throw new AppError('Cannot interrogate suspects on a completed case.', 409, ERROR_CODES.CASE_COMPLETED);
+  }
+
+  const suspect = (caseDoc.suspects || []).find((s) => s.id === suspectId);
+  if (!suspect) {
+    throw new AppError(
+      `Suspect "${suspectId}" does not belong to this case.`,
+      404,
+      ERROR_CODES.SUSPECT_NOT_FOUND
+    );
+  }
+
+  const maxInterrogations = INTERROGATION_LIMITS[caseDoc.difficulty] || 8;
+  const currentInterrogations = caseDoc.interrogations || [];
+  if (currentInterrogations.length >= maxInterrogations) {
+    throw new AppError(
+      `Interrogation budget of ${maxInterrogations} questions reached for this case.`,
+      409,
+      ERROR_CODES.INTERROGATION_LIMIT_REACHED
+    );
+  }
+
+  let answer;
+  try {
+    answer = await generateInterrogationResponse(caseDoc, suspectId, question, category, options);
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    throw new AppError(
+      `Interrogation terminal communication failed: ${err.message}`,
+      502,
+      ERROR_CODES.AI_INTERROGATION_FAILED
+    );
+  }
+
+  const interactionId = `interact_${crypto.randomBytes(6).toString('hex')}`;
+  const interaction = {
+    interactionId,
+    suspectId,
+    category: category || 'general',
+    question: question.trim(),
+    answer,
+    createdAt: new Date(),
+  };
+
+  if (isDbConnected()) {
+    await Case.findByIdAndUpdate(caseId, {
+      $push: { interrogations: interaction },
+    });
+  }
+
+  if (!caseDoc.interrogations) caseDoc.interrogations = [];
+  caseDoc.interrogations.push(interaction);
+  if (!isDbConnected()) {
+    memoryCases.set(caseId, caseDoc);
+  }
+
+  const remainingQuestions = Math.max(0, maxInterrogations - caseDoc.interrogations.length);
+
+  return {
+    interactionId,
+    suspectId,
+    answer,
+    remainingQuestions,
   };
 }
 

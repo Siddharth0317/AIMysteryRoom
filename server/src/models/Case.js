@@ -26,6 +26,15 @@ const EvidenceMappingSchema = new mongoose.Schema({
   supports: { type: String, required: true },
 }, { _id: false });
 
+const InterrogationSchema = new mongoose.Schema({
+  interactionId: { type: String, required: true },
+  suspectId: { type: String, required: true },
+  category: { type: String, default: 'general' },
+  question: { type: String, required: true, trim: true },
+  answer: { type: String, required: true, trim: true },
+  createdAt: { type: Date, default: Date.now },
+}, { _id: false });
+
 const CaseSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   premise: { type: String, required: true, trim: true, maxlength: 500 },
@@ -47,6 +56,7 @@ const CaseSchema = new mongoose.Schema({
   // Player Progress & State Tracking
   discoveredClueIds: { type: [String], default: [] },
   hintsUsed: { type: Number, default: 0 },
+  interrogations: { type: [InterrogationSchema], default: [] },
   accusationSuspectId: { type: String, default: null },
   isCorrect: { type: Boolean, default: null },
   score: { type: Number, default: 0 },

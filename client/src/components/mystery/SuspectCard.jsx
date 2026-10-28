@@ -1,11 +1,12 @@
 import React from 'react';
-import { User, ShieldAlert, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { User, ShieldAlert, Clock, AlertCircle, CheckCircle, MessageSquare } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 
 export default function SuspectCard({
   suspect,
   selected = false,
   onSelect,
+  onInterrogate,
   selectable = false,
   compact = false,
 }) {
@@ -92,6 +93,23 @@ export default function SuspectCard({
               {suspect.alibi}
             </p>
           </div>
+
+          {/* Interrogation Action Button per SPEC.md */}
+          {onInterrogate && (
+            <div className="pt-2 border-t border-cyber-border/40 flex justify-end">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInterrogate(suspect);
+                }}
+                className="flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold bg-cyber-cyan/10 border border-cyber-cyan/50 text-cyber-cyan hover:bg-cyber-cyan/20 transition-colors"
+              >
+                <MessageSquare className="w-3 h-3" />
+                <span>INTERROGATE</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

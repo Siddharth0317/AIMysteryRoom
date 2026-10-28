@@ -6,6 +6,8 @@ import {
   accuseSchema,
   caseIdParamSchema,
   discoverClueParamSchema,
+  interrogateParamSchema,
+  interrogateBodySchema,
 } from '../validators/caseSchemas.js';
 
 const router = express.Router();
@@ -36,6 +38,14 @@ router.post(
   '/:id/hints',
   validateParams(caseIdParamSchema),
   caseController.requestHint
+);
+
+// 5. Interrogate suspect
+router.post(
+  '/:id/suspects/:suspectId/interrogate',
+  validateParams(interrogateParamSchema),
+  validateBody(interrogateBodySchema),
+  caseController.interrogateSuspect
 );
 
 // 5. Submit final accusation

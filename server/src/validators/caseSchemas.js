@@ -32,6 +32,25 @@ export const discoverClueParamSchema = z.object({
   clueId: z.string().trim().min(1, 'Clue ID is required'),
 });
 
+export const interrogateParamSchema = z.object({
+  id: z.string().trim().min(1, 'Case ID is required'),
+  suspectId: z.string().trim().min(1, 'Suspect ID is required'),
+});
+
+export const interrogateBodySchema = z.object({
+  question: z
+    .string({ required_error: 'Interrogation question is required' })
+    .trim()
+    .min(1, 'Question cannot be empty')
+    .max(300, 'Question must not exceed 300 characters'),
+  category: z
+    .string()
+    .trim()
+    .max(50)
+    .optional()
+    .default('general'),
+});
+
 // Structural Schemas for Case Generation & Verification
 export const suspectSchema = z.object({
   id: z.string().min(1),

@@ -58,7 +58,18 @@ export async function requestHint(caseId) {
 }
 
 /**
- * 5. Submit final accusation
+ * 5. Interrogate a suspect
+ */
+export async function interrogateSuspect(caseId, suspectId, question, category = 'general') {
+  const response = await client.post(`/api/cases/${caseId}/suspects/${suspectId}/interrogate`, {
+    question,
+    category,
+  });
+  return response.data; // { interactionId, suspectId, answer, remainingQuestions }
+}
+
+/**
+ * 6. Submit final accusation
  */
 export async function submitAccusation(caseId, suspectId) {
   const response = await client.post(`/api/cases/${caseId}/accuse`, { suspectId });
@@ -66,7 +77,7 @@ export async function submitAccusation(caseId, suspectId) {
 }
 
 /**
- * 6. Retrieve case result and debrief
+ * 7. Retrieve case result and debrief
  */
 export async function getCaseResult(caseId) {
   const response = await client.get(`/api/cases/${caseId}/result`);
@@ -78,6 +89,7 @@ export default {
   getCase,
   discoverClue,
   requestHint,
+  interrogateSuspect,
   submitAccusation,
   getCaseResult,
 };

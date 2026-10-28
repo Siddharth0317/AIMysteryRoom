@@ -1,4 +1,4 @@
-import { DIFFICULTY_RULES } from '../constants/gameRules.js';
+import { DIFFICULTY_RULES, INTERROGATION_LIMITS } from '../constants/gameRules.js';
 
 /**
  * AI Mystery Room — Player-Safe Serializer (Zero-Leakage Enforcement)
@@ -12,6 +12,8 @@ export function toPlayerSafeCase(caseDoc) {
   const raw = typeof caseDoc.toObject === 'function' ? caseDoc.toObject() : caseDoc;
   const discoveredSet = new Set(raw.discoveredClueIds || []);
   const maxHints = DIFFICULTY_RULES[raw.difficulty]?.maxHints || 3;
+  const maxInterrogations = INTERROGATION_LIMITS[raw.difficulty] || 8;
+  const rawInterrogations = raw.interrogations || [];
 
   const safeCase = {
     id: raw._id ? raw._id.toString() : raw.id,
@@ -40,11 +42,22 @@ export function toPlayerSafeCase(caseDoc) {
       id: h.id,
       text: h.text,
     })),
+    interrogations: rawInterrogations.map((entry) => ({
+      interactionId: entry.interactionId,
+      suspectId: entry.suspectId,
+      category: entry.category || 'general',
+      question: entry.question,
+      answer: entry.answer,
+      createdAt: entry.createdAt,
+    })),
     progress: {
       discoveredClueCount: discoveredSet.size,
       totalClues: (raw.clues || []).length,
       hintsUsed: raw.hintsUsed || 0,
       maxHints: maxHints,
+      interrogationsUsed: rawInterrogations.length,
+      maxInterrogations: maxInterrogations,
+      remainingInterrogations: Math.max(0, maxInterrogations - rawInterrogations.length),
       status: raw.status || 'active',
     },
   };

@@ -29,6 +29,9 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
   const [activeInterrogationSuspect, setActiveInterrogationSuspect] = useState(null);
   const [interrogationInput, setInterrogationInput] = useState('');
   const [interrogationLogs, setInterrogationLogs] = useState({});
+  const [interrogating, setInterrogating] = useState(false);
+  const [interrogationCategory, setInterrogationCategory] = useState('general');
+  const [interrogationError, setInterrogationError] = useState(null);
   const [selectedAccusedId, setSelectedAccusedId] = useState('');
   const [initialLoading, setInitialLoading] = useState(!activeCase && Boolean(currentCaseId));
 
@@ -43,6 +46,19 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
       setActiveInterrogationSuspect(activeCase.suspects[0]);
     }
   }, [activeCase]);
+
+  // Sync saved interrogation transcript from activeCase
+  useEffect(() => {
+    if (activeCase?.interrogations?.length > 0) {
+      const mappedLogs = {};
+      for (const item of activeCase.interrogations) {
+        if (!mappedLogs[item.suspectId]) mappedLogs[item.suspectId] = [];
+        mappedLogs[item.suspectId].push({ sender: 'detective', text: item.question });
+        mappedLogs[item.suspectId].push({ sender: 'suspect', text: item.answer });
+      }
+      setInterrogationLogs((prev) => ({ ...mappedLogs, ...prev }));
+    }
+  }, [activeCase?.interrogations]);
 
   // Load case if navigated directly by URL and activeCase is missing
   useEffect(() => {
@@ -180,25 +196,73 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
     }
   };
 
-  const handleInterrogationSubmit = (e) => {
-    e.preventDefault();
-    if (!interrogationInput.trim() || !activeInterrogationSuspect) return;
+  const handleInterrogationSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!interrogationInput.trim() || !activeInterrogationSuspect || interrogating) return;
 
     const query = interrogationInput.trim();
     const suspectId = activeInterrogationSuspect.id;
     const prevLogs = interrogationLogs[suspectId] || [];
 
-    const newResponse = `[DECRYPTED STATEMENT] "${activeInterrogationSuspect.alibi || 'I have already shared my whereabouts with terminal investigators.'}"`;
+    setInterrogating(true);
+    setInterrogationError(null);
 
-    setInterrogationLogs({
-      ...interrogationLogs,
+    // Optimistically add detective message to transcript
+    setInterrogationLogs((prev) => ({
+      ...prev,
       [suspectId]: [
-        ...prevLogs,
+        ...(prev[suspectId] || []),
         { sender: 'detective', text: query },
-        { sender: 'suspect', text: newResponse },
       ],
-    });
+    }));
     setInterrogationInput('');
+
+    try {
+      const res = await casesApi.interrogateSuspect(caseId, suspectId, query, interrogationCategory);
+      setInterrogationLogs((prev) => ({
+        ...prev,
+        [suspectId]: [
+          ...(prev[suspectId] || []),
+          { sender: 'suspect', text: res.answer },
+        ],
+      }));
+
+      // Update remaining interrogation count in activeCase progress
+      if (activeCase && onCaseUpdated) {
+        const updatedInterrogations = [
+          ...(activeCase.interrogations || []),
+          {
+            interactionId: res.interactionId,
+            suspectId: res.suspectId,
+            category: interrogationCategory,
+            question: query,
+            answer: res.answer,
+            createdAt: new Date().toISOString(),
+          },
+        ];
+        onCaseUpdated({
+          ...activeCase,
+          interrogations: updatedInterrogations,
+          progress: {
+            ...activeCase.progress,
+            interrogationsUsed: updatedInterrogations.length,
+            remainingInterrogations: res.remainingQuestions,
+          },
+        });
+      }
+    } catch (err) {
+      const errMsg = err.message || 'Interrogation uplink failed.';
+      setInterrogationError(errMsg);
+      setInterrogationLogs((prev) => ({
+        ...prev,
+        [suspectId]: [
+          ...(prev[suspectId] || []),
+          { sender: 'suspect', text: `[TRANSMISSION INTERRUPTED: ${errMsg}]` },
+        ],
+      }));
+    } finally {
+      setInterrogating(false);
+    }
   };
 
   const handleIssueWarrant = () => {
@@ -514,7 +578,7 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
                 })}
               </div>
 
-              {/* Interrogation Terminal Floating Dialog (matching screenshot) */}
+              {/* Interrogation Terminal Floating Dialog */}
               {activeInterrogationSuspect && (
                 <div className="mt-4 p-3 rounded-lg bg-cyber-subsurface border border-cyber-cyan/70 shadow-lg relative z-20 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-cyber-border mb-2">
@@ -523,10 +587,19 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
                         #
                       </div>
                       <div>
-                        <span className="font-bold text-cyber-text text-xs">
-                          {activeInterrogationSuspect.name}
-                        </span>
-                        <span className="text-[9px] text-cyber-green block">CHANNEL SECURED</span>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold text-cyber-text text-xs">
+                            {activeInterrogationSuspect.name}
+                          </span>
+                          <span className="text-[10px] text-cyber-cyan">({activeInterrogationSuspect.role})</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-[9px]">
+                          <span className="text-cyber-green">CHANNEL SECURED</span>
+                          <span className="text-cyber-border">|</span>
+                          <span className="text-cyber-amber font-bold">
+                            REMAINING QUESTIONS: {activeCase?.progress?.remainingInterrogations ?? 8}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <button
@@ -536,6 +609,40 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
                     >
                       ×
                     </button>
+                  </div>
+
+                  {interrogationError && (
+                    <div className="mb-2 p-1.5 bg-cyber-red/10 border border-cyber-red/50 rounded text-cyber-red text-[10px]">
+                      {interrogationError}
+                    </div>
+                  )}
+
+                  {/* Suggested Category Chips */}
+                  <div className="flex items-center space-x-1 mb-2 overflow-x-auto pb-1 text-[9px]">
+                    {[
+                      { id: 'alibi', label: 'ALIBI / TIMELINE', prompt: 'Where exactly were you at the time of the incident?' },
+                      { id: 'motive', label: 'MOTIVE / CONFLICT', prompt: 'What motive or conflict did you have regarding this facility?' },
+                      { id: 'clue', label: 'FORENSIC EVIDENCE', prompt: 'What do you know about the discovered physical evidence?' },
+                      { id: 'general', label: 'DIRECT QUESTION', prompt: '' },
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setInterrogationCategory(cat.id);
+                          if (cat.prompt && !interrogationInput) {
+                            setInterrogationInput(cat.prompt);
+                          }
+                        }}
+                        className={`px-2 py-0.5 rounded border whitespace-nowrap transition-colors ${
+                          interrogationCategory === cat.id
+                            ? 'bg-cyber-cyan/20 text-cyber-cyan border-cyber-cyan'
+                            : 'bg-cyber-bg text-cyber-muted border-cyber-border/70 hover:border-cyber-cyan/50'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Transcript History */}
@@ -566,21 +673,40 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
                         {entry.text}
                       </div>
                     ))}
+                    {interrogating && (
+                      <div className="p-2 rounded bg-cyber-cyan/10 border border-cyber-cyan/40 text-cyber-cyan text-[10px] animate-pulse">
+                        TRANSMITTING NEURAL INTERROGATION QUERY...
+                      </div>
+                    )}
                   </div>
 
-                  {/* Simulated Interrogation Query Input */}
-                  <form onSubmit={handleInterrogationSubmit} className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={interrogationInput}
-                      onChange={(e) => setInterrogationInput(e.target.value)}
-                      placeholder="Type interrogation query..."
-                      className="flex-1 bg-cyber-bg border border-cyber-border rounded px-3 py-1.5 text-xs text-cyber-text focus:outline-none focus:border-cyber-cyan font-mono"
-                    />
-                    <CyberButton variant="primary" size="xs" icon={Send} type="submit">
-                      SEND
-                    </CyberButton>
-                  </form>
+                  {/* Interrogation Query Input */}
+                  {(activeCase?.progress?.remainingInterrogations ?? 8) <= 0 ? (
+                    <div className="p-2 bg-cyber-bg border border-cyber-border text-cyber-muted text-center rounded text-[10px]">
+                      INTERROGATION BUDGET EXHAUSTED FOR THIS CASE
+                    </div>
+                  ) : (
+                    <form onSubmit={handleInterrogationSubmit} className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={interrogationInput}
+                        onChange={(e) => setInterrogationInput(e.target.value)}
+                        placeholder="Type interrogation query (max 300 chars)..."
+                        disabled={interrogating}
+                        className="flex-1 bg-cyber-bg border border-cyber-border rounded px-3 py-1.5 text-xs text-cyber-text focus:outline-none focus:border-cyber-cyan font-mono disabled:opacity-50"
+                      />
+                      <CyberButton
+                        variant="primary"
+                        size="xs"
+                        icon={Send}
+                        type="submit"
+                        disabled={interrogating || !interrogationInput.trim()}
+                      >
+                        {interrogating ? 'QUERYING...' : 'SEND'}
+                      </CyberButton>
+                    </form>
+                  )}
                 </div>
               )}
             </div>
@@ -601,8 +727,12 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
               <SuspectCard
                 key={suspect.id}
                 suspect={suspect}
-                onSelectSuspect={(s) => {
+                selected={activeInterrogationSuspect?.id === suspect.id}
+                onSelect={(s) => {
                   setSelectedAccusedId(s.id);
+                  setActiveInterrogationSuspect(s);
+                }}
+                onInterrogate={(s) => {
                   setActiveInterrogationSuspect(s);
                 }}
               />

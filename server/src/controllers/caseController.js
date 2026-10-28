@@ -45,6 +45,17 @@ export async function requestHint(req, res, next) {
   }
 }
 
+export async function interrogateSuspect(req, res, next) {
+  try {
+    const { id, suspectId } = req.params;
+    const { question, category } = req.body;
+    const result = await caseService.interrogateSuspect(id, suspectId, { question, category });
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function submitAccusation(req, res, next) {
   try {
     const { id } = req.params;
