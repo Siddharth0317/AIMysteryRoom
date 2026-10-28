@@ -100,6 +100,14 @@ export async function getCaseResult(caseId) {
   return response.data;
 }
 
+/**
+ * 10. Retrieve post-game AI analysis (SPEC.md Section 17.6)
+ */
+export async function getCaseAnalysis(caseId) {
+  const response = await client.get(`/api/cases/${caseId}/analysis`);
+  return response.data.analysis;
+}
+
 export default {
   createCase,
   getCase,
@@ -110,4 +118,6 @@ export default {
   saveBoard,
   submitAccusation,
   getCaseResult,
+  getCaseAnalysis,
 };
+

@@ -104,6 +104,7 @@ const CaseSchema = new mongoose.Schema({
     default: 'active',
   },
   scoreBreakdown: { type: mongoose.Schema.Types.Mixed, default: null },
+  analysisCache: { type: mongoose.Schema.Types.Mixed, default: null },
 }, {
   timestamps: true,
 });

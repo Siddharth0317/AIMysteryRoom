@@ -187,3 +187,25 @@ export const generatedCaseSchema = z.object({
     });
   }
 });
+
+// Post-Game AI Analysis Schemas (SPEC.md Section 17.6)
+export const keyEvidenceItemSchema = z.object({
+  clueId: z.string().min(1),
+  title: z.string().trim().min(1),
+  explanation: z.string().trim().min(1).max(500),
+});
+
+export const redHerringItemSchema = z.object({
+  clueId: z.string().min(1),
+  explanation: z.string().trim().min(1).max(500),
+});
+
+export const postGameAnalysisSchema = z.object({
+  status: z.literal('ready').default('ready'),
+  summary: z.string().trim().min(1).max(800),
+  keyEvidence: z.array(keyEvidenceItemSchema).min(1),
+  redHerrings: z.array(redHerringItemSchema).default([]),
+  suspectComparison: z.string().trim().min(1).max(800).optional().default(''),
+  nextTimeTip: z.string().trim().min(1).max(400),
+});
+

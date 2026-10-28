@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { DIFFICULTY_RULES, ERROR_CODES } from '../constants/gameRules.js';
-import { generatedCaseSchema } from '../validators/caseSchemas.js';
+import { generatedCaseSchema, postGameAnalysisSchema } from '../validators/caseSchemas.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { validateMysteryCase } from './caseValidationService.js';
 
@@ -370,3 +370,142 @@ export async function generateInterrogationResponse(caseDoc, suspectId, question
 
   return generateDeterministicInterrogation(suspect, caseDoc, question, category);
 }
+
+/**
+ * Builds prompt for Post-Game AI Analysis (SPEC.md Section 17.6)
+ */
+export function buildAnalysisPrompt(caseDoc) {
+  const culprit = (caseDoc.suspects || []).find((s) => s.id === caseDoc.culpritId);
+  const accused = (caseDoc.suspects || []).find((s) => s.id === caseDoc.accusationSuspectId);
+  const discoveredSet = new Set(caseDoc.discoveredClueIds || []);
+
+  const cluesSummary = (caseDoc.clues || []).map((c) => {
+    const isDiscovered = discoveredSet.has(c.id);
+    return `- [${c.id}] ${c.title} (${isDiscovered ? 'Discovered by player' : 'Undiscovered by player'}): ${c.description}`;
+  }).join('\n');
+
+  return `You are a Senior Cyber-Detective Intelligence Analyst performing a post-incident forensic debrief.
+A detective player has completed an investigation. Review the canonical facts and provide a structured learning debrief explaining which evidence was decisive, why red herrings were misleading, and what key patterns to look for next time.
+
+CANONICAL CASE SUMMARY:
+- Case Title: ${caseDoc.title}
+- Actual Culprit: ${culprit ? `${culprit.name} (${culprit.role}) [ID: ${culprit.id}]` : caseDoc.culpritId}
+- Player Accused: ${accused ? `${accused.name} (${accused.role}) [ID: ${accused.id}]` : caseDoc.accusationSuspectId}
+- Verdict: ${caseDoc.isCorrect ? 'CORRECT ACCUSATION' : 'INCORRECT ACCUSATION'}
+- Canonical Solution: ${caseDoc.solution}
+
+FORENSIC EVIDENCE INVENTORY:
+${cluesSummary}
+
+OUTPUT REQUIREMENTS:
+Return a JSON object conforming strictly to this format:
+{
+  "status": "ready",
+  "summary": "1-3 sentences summarizing the core breakthrough and why the evidence confirms the culprit.",
+  "keyEvidence": [
+    {
+      "clueId": "valid clue ID matching one from the inventory above",
+      "title": "clue title",
+      "explanation": "Specific explanation of how this clue confirms the culprit or shatters their alibi."
+    }
+  ],
+  "redHerrings": [
+    {
+      "clueId": "valid clue ID matching a distraction or misleading element",
+      "explanation": "Why this evidence appeared suspicious at first glance but pointed away or was innocuous."
+    }
+  ],
+  "suspectComparison": "Neutral explanation comparing the evidence against the accused suspect vs the actual culprit.",
+  "nextTimeTip": "Actionable tactical detective advice (e.g. cross-referencing timestamps before trusting alibis)."
+}
+
+CRITICAL RULES:
+1. Every clueId in "keyEvidence" and "redHerrings" MUST be one of the real clue IDs from the inventory.
+2. Tone must be professional, analytical, and encouraging—never mock or shame the player.
+3. Return ONLY valid JSON. No markdown backticks, no comments.`;
+}
+
+/**
+ * Deterministic fallback analysis derived from canonical solution and clues
+ */
+export function generateDeterministicAnalysis(caseDoc) {
+  const culprit = (caseDoc.suspects || []).find((s) => s.id === caseDoc.culpritId);
+  const accused = (caseDoc.suspects || []).find((s) => s.id === caseDoc.accusationSuspectId);
+  const clues = caseDoc.clues || [];
+
+  const keyEvidenceClue = clues[0] || { id: 'clue_1', title: 'Primary Forensic Log', description: 'Decisive evidence record' };
+  const redHerringClue = clues.length > 1 ? clues[1] : null;
+
+  return {
+    status: 'ready',
+    summary: caseDoc.solution
+      ? `Forensic analysis confirms the incident was orchestrated by ${culprit ? culprit.name : 'the perpetrator'}. ${caseDoc.solution}`
+      : `Forensic analysis confirms ${culprit ? culprit.name : 'the perpetrator'} was the sole operative with capability and motive.`,
+    keyEvidence: [
+      {
+        clueId: keyEvidenceClue.id,
+        title: keyEvidenceClue.title,
+        explanation: `Biometric telemetry and access logs directly linked ${culprit ? culprit.name : 'the culprit'} to the scene, refuting their timeline alibi.`,
+      },
+    ],
+    redHerrings: redHerringClue ? [
+      {
+        clueId: redHerringClue.id,
+        explanation: 'Telemetry anomalies initially appeared suspicious, but secondary audits confirmed routine sector maintenance.',
+      },
+    ] : [],
+    suspectComparison: caseDoc.isCorrect
+      ? `The detective correctly identified ${culprit ? culprit.name : 'the culprit'} (${culprit ? culprit.role : 'operative'}) based on unassailable physical evidence.`
+      : `The player targeted ${accused ? accused.name : 'an alternate suspect'}, but conclusive physical telemetry linked the breach to ${culprit ? culprit.name : 'the actual culprit'} (${culprit ? culprit.role : 'operative'}).`,
+    nextTimeTip: 'Cross-reference biometric timestamps against witness statements before issuing the final warrant.',
+  };
+}
+
+/**
+ * Generates structured post-game analysis with Gemini or safe deterministic fallback
+ */
+export async function generatePostGameAnalysis(caseDoc, options = {}) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const client = options.client;
+
+  if (client || (apiKey && apiKey !== 'your_gemini_api_key_here')) {
+    try {
+      const genAiClient = client || new GoogleGenAI({ apiKey });
+      const prompt = buildAnalysisPrompt(caseDoc);
+
+      const response = await genAiClient.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          temperature: 0.4,
+        },
+      });
+
+      const rawText = response.text || '';
+      const cleaned = cleanJsonText(rawText);
+      const parsed = JSON.parse(cleaned);
+      const validated = postGameAnalysisSchema.parse(parsed);
+
+      // Verify clueId references
+      const validClueIds = new Set((caseDoc.clues || []).map((c) => c.id));
+      const hasInvalidClue = validated.keyEvidence.some((k) => !validClueIds.has(k.clueId)) ||
+        validated.redHerrings.some((r) => !validClueIds.has(r.clueId));
+
+      if (hasInvalidClue) {
+        console.warn('[AI-MYSTERY-ROOM] AI Analysis referenced invalid clues. Using deterministic fallback.');
+        return generateDeterministicAnalysis(caseDoc);
+      }
+
+      return validated;
+    } catch (err) {
+      if (options.client) {
+        throw err;
+      }
+      console.warn(`[AI-MYSTERY-ROOM] Post-game AI analysis failed: ${err.message}. Using safe deterministic fallback.`);
+      return generateDeterministicAnalysis(caseDoc);
+    }
+  }
+
+  return generateDeterministicAnalysis(caseDoc);
+}
+

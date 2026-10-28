@@ -79,4 +79,11 @@ router.get(
   caseController.getCaseResult
 );
 
+// 10. Retrieve post-game AI analysis (SPEC.md Section 17.6)
+router.get(
+  '/:id/analysis',
+  validateParams(caseIdParamSchema),
+  caseController.getCaseAnalysis
+);
+
 export default router;

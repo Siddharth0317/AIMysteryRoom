@@ -5,7 +5,7 @@ import { DIFFICULTY_RULES, INTERROGATION_LIMITS, ERROR_CODES } from '../constant
 import { calculateScore } from './scoringService.js';
 import { toPlayerSafeCase, toCaseResult, toPlayerSafeBoard } from './caseSerializer.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { generateMysteryCase, generateInterrogationResponse } from './geminiService.js';
+import { generateMysteryCase, generateInterrogationResponse, generatePostGameAnalysis } from './geminiService.js';
 
 // In-memory fallback repository for test suites or offline development
 const memoryCases = new Map();
@@ -337,6 +337,38 @@ export async function getCaseResult(caseId) {
   }
 
   return toCaseResult(caseDoc);
+}
+
+/**
+ * Retrieves post-game AI analysis for completed cases (SPEC.md Section 17.6)
+ * Validates completion, uses cached analysis if available, or synthesizes via Gemini
+ */
+export async function getPostGameAnalysis(caseId, options = {}) {
+  const caseDoc = await getCaseById(caseId);
+
+  if (caseDoc.status !== 'completed') {
+    throw new AppError(
+      'Case is active. Post-game analysis cannot be accessed prior to case completion.',
+      409,
+      ERROR_CODES.CASE_NOT_COMPLETED
+    );
+  }
+
+  // Return cached analysis if already generated
+  if (caseDoc.analysisCache) {
+    return { analysis: caseDoc.analysisCache };
+  }
+
+  const analysis = await generatePostGameAnalysis(caseDoc, options);
+
+  if (isDbConnected()) {
+    await Case.findByIdAndUpdate(caseId, { analysisCache: analysis });
+  } else {
+    caseDoc.analysisCache = analysis;
+    memoryCases.set(caseId, caseDoc);
+  }
+
+  return { analysis };
 }
 
 /**

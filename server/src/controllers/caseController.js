@@ -97,3 +97,14 @@ export async function saveBoard(req, res, next) {
     next(err);
   }
 }
+
+export async function getCaseAnalysis(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await caseService.getPostGameAnalysis(id);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+

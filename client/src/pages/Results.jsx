@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { CheckCircle2, XCircle, ShieldCheck, ShieldAlert, Sparkles, RefreshCw, Home, ArrowRight, User } from 'lucide-react';
+import {
+  CheckCircle2,
+  XCircle,
+  ShieldCheck,
+  ShieldAlert,
+  Sparkles,
+  RefreshCw,
+  Home,
+  ArrowRight,
+  User,
+  Cpu,
+  AlertTriangle,
+  Compass,
+  CheckCircle,
+} from 'lucide-react';
 import TerminalPanel from '../components/common/TerminalPanel';
 import StatusBadge from '../components/common/StatusBadge';
 import CyberButton from '../components/common/CyberButton';
@@ -15,6 +29,9 @@ export default function Results({ activeCase, latestResult }) {
 
   const [fetchedResult, setFetchedResult] = useState(null);
   const [loading, setLoading] = useState(!latestResult && !activeCase?.result);
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState(null);
 
   const result = latestResult || activeCase?.result || fetchedResult;
 
@@ -30,6 +47,22 @@ export default function Results({ activeCase, latestResult }) {
         });
     } else {
       setLoading(false);
+    }
+  }, [currentCaseId, result]);
+
+  // Asynchronously load Post-Game AI Analysis without blocking core result
+  useEffect(() => {
+    if (currentCaseId && result) {
+      setAnalysisLoading(true);
+      casesApi.getCaseAnalysis(currentCaseId)
+        .then((data) => {
+          setAnalysis(data);
+          setAnalysisLoading(false);
+        })
+        .catch((err) => {
+          setAnalysisError(err.message || 'Analysis debrief unavailable');
+          setAnalysisLoading(false);
+        });
     }
   }, [currentCaseId, result]);
 
@@ -144,6 +177,127 @@ export default function Results({ activeCase, latestResult }) {
             </div>
           </div>
         </div>
+      </TerminalPanel>
+
+      {/* Post-Game AI Analysis & Tactical Forensic Debrief (SPEC.md Section 17.6) */}
+      <TerminalPanel
+        title="AI CASE DEBRIEF &amp; TACTICAL FORENSIC REVIEW"
+        subtitle="POST-INCIDENT INTELLIGENCE SYNTHESIS"
+        badge={
+          <StatusBadge size="xs" variant={analysis ? 'green' : 'cyan'}>
+            {analysisLoading ? 'SYNTHESIZING' : analysis ? 'ANALYSIS READY' : 'FORENSIC REVIEW'}
+          </StatusBadge>
+        }
+      >
+        {analysisLoading ? (
+          <div className="py-8 text-center text-cyber-cyan text-xs font-mono animate-pulse flex flex-col items-center justify-center space-y-2">
+            <Cpu className="w-6 h-6 animate-spin text-cyber-cyan" />
+            <span>SYNTHESIZING NEURAL POST-INCIDENT DEBRIEF WITH GEMINI...</span>
+          </div>
+        ) : analysis ? (
+          <div className="space-y-4 text-xs">
+            {/* Decisive Evidence Summary */}
+            <div className="p-3 bg-cyber-subsurface border border-cyber-cyan/40 rounded-lg">
+              <span className="text-[10px] text-cyber-cyan font-bold uppercase tracking-wider block mb-1">
+                EXECUTIVE DEBRIEF SUMMARY:
+              </span>
+              <p className="text-cyber-text text-xs sm:text-sm leading-relaxed">
+                {analysis.summary}
+              </p>
+            </div>
+
+            {/* Key Evidence Breakdown */}
+            {analysis.keyEvidence && analysis.keyEvidence.length > 0 && (
+              <div>
+                <div className="flex items-center space-x-1.5 mb-2">
+                  <ShieldCheck className="w-4 h-4 text-cyber-green" />
+                  <span className="font-bold text-cyber-green uppercase tracking-wider text-xs">
+                    DECISIVE FORENSIC BREAKTHROUGHS
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {analysis.keyEvidence.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-cyber-surface/90 border border-cyber-green/40 rounded-lg"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-cyber-text text-xs">
+                          {item.title}
+                        </span>
+                        <StatusBadge size="xs" variant="green">KEY EVIDENCE</StatusBadge>
+                      </div>
+                      <p className="text-cyber-muted text-[11px] leading-relaxed">
+                        {item.explanation}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Red Herrings Deconstructed */}
+            {analysis.redHerrings && analysis.redHerrings.length > 0 && (
+              <div>
+                <div className="flex items-center space-x-1.5 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-cyber-amber" />
+                  <span className="font-bold text-cyber-amber uppercase tracking-wider text-xs">
+                    RED HERRINGS DECONSTRUCTED
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {analysis.redHerrings.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-cyber-surface/90 border border-cyber-amber/30 rounded-lg"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-cyber-amber text-xs">
+                          ANOMALY #{item.clueId}
+                        </span>
+                        <StatusBadge size="xs" variant="amber">DISTRACTION</StatusBadge>
+                      </div>
+                      <p className="text-cyber-muted text-[11px] leading-relaxed">
+                        {item.explanation}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Suspect Comparison */}
+            {analysis.suspectComparison && (
+              <div className="p-3 bg-cyber-subsurface border border-cyber-border rounded-lg">
+                <span className="text-[10px] text-cyber-muted uppercase font-bold block mb-1">
+                  SUSPECT &amp; ACCUSATION FORENSIC EVALUATION:
+                </span>
+                <p className="text-cyber-muted text-[11px] leading-relaxed">
+                  {analysis.suspectComparison}
+                </p>
+              </div>
+            )}
+
+            {/* Next Time Tactical Tip */}
+            {analysis.nextTimeTip && (
+              <div className="p-3 bg-cyber-cyan/10 border border-cyber-cyan/50 rounded-lg flex items-start space-x-2">
+                <Compass className="w-4 h-4 text-cyber-cyan shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-[10px] text-cyber-cyan font-bold uppercase block">
+                    TACTICAL DIRECTIVE FOR FUTURE INVESTIGATIONS:
+                  </span>
+                  <p className="text-cyber-text text-xs leading-relaxed mt-0.5">
+                    {analysis.nextTimeTip}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-4 bg-cyber-subsurface/60 border border-cyber-border rounded text-center text-cyber-muted text-xs">
+            {analysisError || 'AI forensic debrief is currently unavailable for this case.'}
+          </div>
+        )}
       </TerminalPanel>
 
       {/* Authoritative Score Breakdown */}
