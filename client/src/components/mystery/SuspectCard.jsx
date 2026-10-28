@@ -12,8 +12,18 @@ export default function SuspectCard({
 }) {
   return (
     <div
+      role={selectable ? 'button' : undefined}
+      tabIndex={selectable ? 0 : undefined}
+      aria-pressed={selectable ? selected : undefined}
+      aria-label={selectable ? `Select ${suspect.name}, ${suspect.role} as target` : undefined}
+      onKeyDown={selectable && onSelect ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(suspect);
+        }
+      } : undefined}
       onClick={selectable && onSelect ? () => onSelect(suspect) : undefined}
-      className={`relative bg-cyber-surface border rounded-lg p-4 font-mono transition-all duration-200 ${
+      className={`relative bg-cyber-surface border rounded-lg p-4 font-mono transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyber-cyan ${
         selectable ? 'cursor-pointer hover:border-cyber-cyan/70 hover:shadow-neon-cyan/20' : ''
       } ${
         selected

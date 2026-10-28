@@ -65,3 +65,53 @@
     text-shadow: 0 0 8px rgba(255, 61, 242, 0.6), 0 0 16px rgba(255, 61, 242, 0.3);
   }
 }
+
+/* Accessibility: High-contrast focus rings for keyboard navigation */
+:focus-visible {
+  outline: 2px solid #35F2FF !important;
+  outline-offset: 2px !important;
+}
+
+/* Accessibility: Respect prefers-reduced-motion and manual user toggle */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .cyber-scanlines {
+    display: none !important;
+  }
+
+  .animate-pulse,
+  .animate-spin,
+  .animate-ping,
+  .animate-fade-in {
+    animation: none !important;
+  }
+}
+
+.reduced-motion *,
+.reduced-motion ::before,
+.reduced-motion ::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+.reduced-motion .cyber-scanlines {
+  display: none !important;
+}
+
+.reduced-motion .animate-pulse,
+.reduced-motion .animate-spin,
+.reduced-motion .animate-ping,
+.reduced-motion .animate-fade-in {
+  animation: none !important;
+}
+

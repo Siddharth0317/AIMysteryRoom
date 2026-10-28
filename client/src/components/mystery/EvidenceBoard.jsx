@@ -71,6 +71,16 @@ export default function EvidenceBoard({
     }
   }, [initialBoard]);
 
+  // Escape key handler for connection modal
+  useEffect(() => {
+    if (!showConnectModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowConnectModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showConnectModal]);
+
   // Persist board to server
   const persistBoard = async (newNodes, newEdges) => {
     if (!caseId) return;
@@ -279,17 +289,23 @@ export default function EvidenceBoard({
 
       {/* Connection Modal */}
       {showConnectModal && (
-        <div className="p-3 bg-cyber-subsurface border border-cyber-cyan rounded-lg shadow-lg relative z-30">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-theory-title"
+          className="p-3 bg-cyber-subsurface border border-cyber-cyan rounded-lg shadow-lg relative z-30"
+        >
           <div className="flex items-center justify-between pb-2 border-b border-cyber-border mb-3">
             <div className="flex items-center space-x-2">
               <LinkIcon className="w-4 h-4 text-cyber-cyan" />
-              <span className="font-bold text-cyber-text text-xs uppercase">
+              <span id="modal-theory-title" className="font-bold text-cyber-text text-xs uppercase">
                 FORMULATE INVESTIGATIVE THEORY
               </span>
             </div>
             <button
               type="button"
               onClick={() => setShowConnectModal(false)}
+              aria-label="Close theory modal"
               className="text-cyber-muted hover:text-cyber-red text-sm"
             >
               ×
@@ -465,8 +481,17 @@ export default function EvidenceBoard({
                   return (
                     <div
                       key={clue.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Evidence clue: ${clue.title}. Established fact.`}
                       onClick={() => setSelectedNodeDetails(clue)}
-                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedNodeDetails(clue);
+                        }
+                      }}
+                      className={`p-3 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyber-green ${
                         isSelected
                           ? 'bg-cyber-surface border-cyber-green shadow-neon-cyan'
                           : 'bg-cyber-surface/80 border-cyber-border hover:border-cyber-green/50'
@@ -524,11 +549,21 @@ export default function EvidenceBoard({
                   return (
                     <div
                       key={suspect.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Suspect dossier: ${suspect.name}, role: ${suspect.role}`}
                       onClick={() => {
                         setSelectedNodeDetails(suspect);
                         if (onSelectSuspect) onSelectSuspect(suspect);
                       }}
-                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedNodeDetails(suspect);
+                          if (onSelectSuspect) onSelectSuspect(suspect);
+                        }
+                      }}
+                      className={`p-3 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyber-cyan ${
                         isSelected
                           ? 'bg-cyber-surface border-cyber-cyan shadow-neon-cyan'
                           : 'bg-cyber-surface/80 border-cyber-border hover:border-cyber-cyan/50'

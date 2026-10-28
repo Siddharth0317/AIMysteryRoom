@@ -11,6 +11,8 @@ export default function TopNav({
   activeCase,
   scanlinesEnabled,
   onToggleScanlines,
+  reducedMotion,
+  onToggleReducedMotion,
   audioEnabled,
   onToggleAudio,
   onResetCaseData
@@ -281,6 +283,8 @@ export default function TopNav({
         onClose={() => setIsSettingsOpen(false)}
         scanlinesEnabled={scanlinesEnabled}
         onToggleScanlines={onToggleScanlines}
+        reducedMotion={reducedMotion}
+        onToggleReducedMotion={onToggleReducedMotion}
         audioEnabled={audioEnabled}
         onToggleAudio={onToggleAudio}
         onResetCaseData={onResetCaseData}

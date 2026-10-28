@@ -171,8 +171,18 @@ export default function CreateMystery({ onCaseCreated }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Easy */}
             <div
+              role="button"
+              tabIndex={0}
+              aria-pressed={difficulty === 'easy'}
+              aria-label="Select Easy difficulty: 3 suspects, 5 clues, 2 hints, 100 base points"
               onClick={() => setDifficulty('easy')}
-              className={`p-4 rounded-lg border transition-all cursor-pointer ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setDifficulty('easy');
+                }
+              }}
+              className={`p-4 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyber-green ${
                 difficulty === 'easy'
                   ? 'border-cyber-green bg-cyber-green/10 shadow-neon-green/20 shadow-md'
                   : 'border-cyber-border bg-cyber-surface hover:border-cyber-green/50'
@@ -198,8 +208,18 @@ export default function CreateMystery({ onCaseCreated }) {
 
             {/* Medium */}
             <div
+              role="button"
+              tabIndex={0}
+              aria-pressed={difficulty === 'medium'}
+              aria-label="Select Medium difficulty: 4 suspects, 7 clues, 3 hints, 150 base points"
               onClick={() => setDifficulty('medium')}
-              className={`p-4 rounded-lg border transition-all cursor-pointer ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setDifficulty('medium');
+                }
+              }}
+              className={`p-4 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyber-cyan ${
                 difficulty === 'medium'
                   ? 'border-cyber-cyan bg-cyber-cyan/10 shadow-neon-cyan/20 shadow-md'
                   : 'border-cyber-border bg-cyber-surface hover:border-cyber-cyan/50'
@@ -225,8 +245,18 @@ export default function CreateMystery({ onCaseCreated }) {
 
             {/* Hard */}
             <div
+              role="button"
+              tabIndex={0}
+              aria-pressed={difficulty === 'hard'}
+              aria-label="Select Hard difficulty: 5 suspects, 9 clues, 3 hints, 200 base points"
               onClick={() => setDifficulty('hard')}
-              className={`p-4 rounded-lg border transition-all cursor-pointer ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setDifficulty('hard');
+                }
+              }}
+              className={`p-4 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyber-magenta ${
                 difficulty === 'hard'
                   ? 'border-cyber-magenta bg-cyber-magenta/10 shadow-neon-magenta/20 shadow-md'
                   : 'border-cyber-border bg-cyber-surface hover:border-cyber-magenta/50'

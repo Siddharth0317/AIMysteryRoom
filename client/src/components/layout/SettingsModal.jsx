@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Sliders, Eye, EyeOff, Volume2, VolumeX, Trash2, ShieldCheck, Cpu, AlertTriangle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Sliders, Eye, EyeOff, Volume2, VolumeX, Trash2, ShieldCheck, Cpu, AlertTriangle, CheckCircle, Zap, ZapOff } from 'lucide-react';
 import CyberButton from '../common/CyberButton';
 import StatusBadge from '../common/StatusBadge';
 
@@ -8,6 +8,8 @@ export default function SettingsModal({
   onClose,
   scanlinesEnabled,
   onToggleScanlines,
+  reducedMotion,
+  onToggleReducedMotion,
   audioEnabled,
   onToggleAudio,
   onResetCaseData,
@@ -15,6 +17,17 @@ export default function SettingsModal({
 }) {
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -85,13 +98,39 @@ export default function SettingsModal({
                 type="button"
                 onClick={onToggleScanlines}
                 className={`flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-bold transition-all ${
-                  scanlinesEnabled
+                  scanlinesEnabled && !reducedMotion
+                    ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan'
+                    : 'bg-cyber-surface text-cyber-muted border border-cyber-border'
+                }`}
+                disabled={reducedMotion}
+              >
+                {scanlinesEnabled && !reducedMotion ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                <span>{reducedMotion ? 'MUTED BY REDUCED MOTION' : scanlinesEnabled ? 'ENABLED' : 'DISABLED'}</span>
+              </button>
+            </div>
+
+            {/* Reduced Motion Toggle (A11y) */}
+            <div className="flex items-center justify-between p-3 rounded bg-cyber-subsurface/60 border border-cyber-border">
+              <div className="space-y-0.5">
+                <span className="font-bold text-cyber-text flex items-center space-x-2">
+                  <span>Reduced Motion (A11y)</span>
+                  <StatusBadge size="xs" variant="cyan">WCAG AA</StatusBadge>
+                </span>
+                <p className="text-[11px] text-cyber-muted">
+                  Suppress pulsing glows, glitch transitions, and animated CRT scanline movement.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onToggleReducedMotion}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-bold transition-all ${
+                  reducedMotion
                     ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan'
                     : 'bg-cyber-surface text-cyber-muted border border-cyber-border'
                 }`}
               >
-                {scanlinesEnabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                <span>{scanlinesEnabled ? 'ENABLED' : 'DISABLED'}</span>
+                {reducedMotion ? <ZapOff className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+                <span>{reducedMotion ? 'ENABLED' : 'DISABLED'}</span>
               </button>
             </div>
 

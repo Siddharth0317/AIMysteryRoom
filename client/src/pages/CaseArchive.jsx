@@ -150,11 +150,15 @@ export default function CaseArchive({ onSelectCase }) {
       )}
 
       {/* Tabs Bar */}
-      <div className="flex items-center space-x-2 border-b border-cyber-border pb-2">
+      <div role="tablist" aria-label="Archive navigation tabs" className="flex items-center space-x-2 border-b border-cyber-border pb-2">
         <button
           type="button"
+          role="tab"
+          id="tab-history"
+          aria-selected={activeTab === 'history'}
+          aria-controls="tabpanel-history"
           onClick={() => setActiveTab('history')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-t font-bold transition-all ${
+          className={`flex items-center space-x-2 px-4 py-2 rounded-t font-bold transition-all focus:outline-none focus:ring-1 focus:ring-cyber-cyan ${
             activeTab === 'history'
               ? 'bg-cyber-cyan/20 text-cyber-cyan border-b-2 border-cyber-cyan shadow-sm'
               : 'text-cyber-muted hover:text-cyber-text'
@@ -166,8 +170,12 @@ export default function CaseArchive({ onSelectCase }) {
 
         <button
           type="button"
+          role="tab"
+          id="tab-stats"
+          aria-selected={activeTab === 'stats'}
+          aria-controls="tabpanel-stats"
           onClick={() => setActiveTab('stats')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-t font-bold transition-all ${
+          className={`flex items-center space-x-2 px-4 py-2 rounded-t font-bold transition-all focus:outline-none focus:ring-1 focus:ring-cyber-cyan ${
             activeTab === 'stats'
               ? 'bg-cyber-cyan/20 text-cyber-cyan border-b-2 border-cyber-cyan shadow-sm'
               : 'text-cyber-muted hover:text-cyber-text'
@@ -179,8 +187,12 @@ export default function CaseArchive({ onSelectCase }) {
 
         <button
           type="button"
+          role="tab"
+          id="tab-achievements"
+          aria-selected={activeTab === 'achievements'}
+          aria-controls="tabpanel-achievements"
           onClick={() => setActiveTab('achievements')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-t font-bold transition-all ${
+          className={`flex items-center space-x-2 px-4 py-2 rounded-t font-bold transition-all focus:outline-none focus:ring-1 focus:ring-cyber-cyan ${
             activeTab === 'achievements'
               ? 'bg-cyber-cyan/20 text-cyber-cyan border-b-2 border-cyber-cyan shadow-sm'
               : 'text-cyber-muted hover:text-cyber-text'

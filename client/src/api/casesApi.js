@@ -7,7 +7,7 @@ const client = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: 30000,
 });
 
 // Response interceptor to unwrap safe error messages
@@ -20,6 +20,16 @@ client.interceptors.response.use(
       customErr.code = errorPayload.code;
       customErr.status = error.response.status;
       return Promise.reject(customErr);
+    }
+    if (error.code === 'ECONNABORTED') {
+      const timeoutErr = new Error('Neural network request timed out. The server or AI model took longer than expected. Please retry.');
+      timeoutErr.code = 'TIMEOUT';
+      return Promise.reject(timeoutErr);
+    }
+    if (!error.response) {
+      const netErr = new Error('Unable to establish link with the investigation server. Please check your network connection.');
+      netErr.code = 'NETWORK_ERROR';
+      return Promise.reject(netErr);
     }
     return Promise.reject(error);
   }

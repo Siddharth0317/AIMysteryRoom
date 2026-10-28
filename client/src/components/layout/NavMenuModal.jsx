@@ -13,8 +13,13 @@ export default function NavMenuModal({ isOpen, onClose, activeCase }) {
   useEffect(() => {
     if (isOpen) {
       setArchivedCases(getCaseArchive());
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

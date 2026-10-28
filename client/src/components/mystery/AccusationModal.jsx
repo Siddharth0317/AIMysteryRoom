@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ShieldAlert, AlertTriangle, Check, X } from 'lucide-react';
 import CyberButton from '../common/CyberButton';
 
@@ -9,6 +9,17 @@ export default function AccusationModal({
   onCancel,
   isSubmitting = false,
 }) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isSubmitting && onCancel) {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isSubmitting, onCancel]);
+
   if (!isOpen || !suspect) return null;
 
   return (

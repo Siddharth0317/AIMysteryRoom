@@ -403,10 +403,69 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
         </div>
       )}
 
-      {/* Main 3-Column Murder Board Grid (Collapses on small viewports) */}
+      {/* Mobile Tab Switcher (Visible on < lg viewports, min 44px touch targets) */}
+      <div className="lg:hidden flex items-center bg-cyber-surface border border-cyber-border rounded-lg p-1 gap-1 text-xs">
+        <button
+          type="button"
+          onClick={() => setActiveTab('board')}
+          className={`flex-1 min-h-[44px] py-2 px-2 text-center font-bold rounded transition-colors flex items-center justify-center space-x-1.5 ${
+            activeTab === 'board'
+              ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/50 shadow-sm'
+              : 'text-cyber-muted hover:text-cyber-text'
+          }`}
+          aria-pressed={activeTab === 'board'}
+        >
+          <Layers className="w-4 h-4 shrink-0" />
+          <span className="truncate">BOARD</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('files')}
+          className={`flex-1 min-h-[44px] py-2 px-2 text-center font-bold rounded transition-colors flex items-center justify-center space-x-1.5 ${
+            activeTab === 'files'
+              ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/50 shadow-sm'
+              : 'text-cyber-muted hover:text-cyber-text'
+          }`}
+          aria-pressed={activeTab === 'files'}
+        >
+          <FileText className="w-4 h-4 shrink-0" />
+          <span className="truncate">CLUES ({discoveredCluesCount}/{totalClues})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('suspects')}
+          className={`flex-1 min-h-[44px] py-2 px-2 text-center font-bold rounded transition-colors flex items-center justify-center space-x-1.5 ${
+            activeTab === 'suspects'
+              ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/50 shadow-sm'
+              : 'text-cyber-muted hover:text-cyber-text'
+          }`}
+          aria-pressed={activeTab === 'suspects'}
+        >
+          <UserCheck className="w-4 h-4 shrink-0" />
+          <span className="truncate">SUSPECTS ({suspects.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('all')}
+          className={`min-h-[44px] py-2 px-2.5 text-center font-bold rounded transition-colors text-[10px] ${
+            activeTab === 'all'
+              ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/50 shadow-sm'
+              : 'text-cyber-muted hover:text-cyber-text'
+          }`}
+          aria-pressed={activeTab === 'all'}
+          title="Show all sections stacked"
+        >
+          ALL
+        </button>
+      </div>
+
+      {/* Main 3-Column Murder Board Grid (Tabbed on mobile, 3-column on desktop) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left Column (3 Cols): CASE FILES & BRIEFING */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className={`space-y-4 ${activeTab === 'files' || activeTab === 'all' ? 'block' : 'hidden lg:block'} lg:col-span-3`}>
           <TerminalPanel
             title="CASE FILES"
             subtitle="CLASSIFIED BRIEFING"
@@ -506,7 +565,7 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
         </div>
 
         {/* Center Column (6 Cols): INTERACTIVE EVIDENCE BOARD & INTERROGATION */}
-        <div className="lg:col-span-6 space-y-4">
+        <div className={`space-y-4 ${activeTab === 'board' || activeTab === 'all' ? 'block' : 'hidden lg:block'} lg:col-span-6`}>
           <EvidenceBoard
             caseId={caseId}
             suspects={suspects}
@@ -660,7 +719,7 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
         </div>
 
         {/* Right Column (3 Cols): SUSPECTS DOSSIER & FINAL VERDICT */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className={`space-y-4 ${activeTab === 'suspects' || activeTab === 'all' ? 'block' : 'hidden lg:block'} lg:col-span-3`}>
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-bold uppercase tracking-wider text-cyber-cyan">
               SUSPECTS ({suspects.length})
