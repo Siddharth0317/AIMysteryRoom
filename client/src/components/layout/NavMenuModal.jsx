@@ -57,126 +57,136 @@ export default function NavMenuModal({ isOpen, onClose, activeCase }) {
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-4 space-y-2 overflow-y-auto flex-1">
-          {/* Home */}
-          <button
-            type="button"
-            onClick={() => handleNav('/')}
-            className="w-full flex items-center justify-between p-3 rounded bg-cyber-subsurface/60 hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-left transition-all group"
-          >
-            <div className="flex items-center space-x-3">
-              <Home className="w-4 h-4 text-cyber-cyan group-hover:scale-110 transition-transform" />
-              <div>
-                <span className="font-bold text-cyber-text text-xs block">TERMINAL DASHBOARD</span>
-                <span className="text-[10px] text-cyber-muted">System hub &amp; operation overview</span>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-cyan" />
-          </button>
-
-          {/* New Case */}
-          <button
-            type="button"
-            onClick={() => handleNav('/create')}
-            className="w-full flex items-center justify-between p-3 rounded bg-cyber-subsurface/60 hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-left transition-all group"
-          >
-            <div className="flex items-center space-x-3">
-              <PlusCircle className="w-4 h-4 text-cyber-green group-hover:scale-110 transition-transform" />
-              <div>
-                <span className="font-bold text-cyber-text text-xs block">INITIALIZE NEW CASE</span>
-                <span className="text-[10px] text-cyber-muted">Synthesize premise via Gemini GenAI</span>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-cyan" />
-          </button>
-
-          {/* Investigation Room */}
-          <button
-            type="button"
-            disabled={!isCaseActive}
-            onClick={() => isCaseActive && handleNav(`/investigation/${activeCase.id}`)}
-            className={`w-full flex items-center justify-between p-3 rounded border text-left transition-all ${
-              isCaseActive
-                ? 'bg-cyber-subsurface/60 hover:bg-cyber-magenta/10 border-cyber-border hover:border-cyber-magenta/50 group cursor-pointer'
-                : 'bg-cyber-subsurface/30 border-cyber-border/40 opacity-50 cursor-not-allowed'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Compass className={`w-4 h-4 ${isCaseActive ? 'text-cyber-magenta' : 'text-cyber-muted'}`} />
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-cyber-text text-xs block">INVESTIGATION DOSSIER</span>
-                  {isCaseActive && <StatusBadge size="xs" variant="amber">ACTIVE</StatusBadge>}
+        {/* Scrollable Content */}
+        <div className="p-4 space-y-4 overflow-y-auto flex-1">
+          {/* Section 1: System Portal */}
+          <div className="space-y-1.5">
+            <span className="text-[10px] text-cyber-muted uppercase tracking-wider font-bold px-1">
+              // SYSTEM PORTAL
+            </span>
+            {/* Home */}
+            <button
+              type="button"
+              onClick={() => handleNav('/')}
+              className="w-full flex items-center justify-between p-2.5 rounded bg-cyber-subsurface/60 hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-left transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <Home className="w-4 h-4 text-cyber-cyan group-hover:scale-110 transition-transform" />
+                <div>
+                  <span className="font-bold text-cyber-text text-xs block">TERMINAL DASHBOARD</span>
+                  <span className="text-[10px] text-cyber-muted">Central operations &amp; case launcher</span>
                 </div>
-                <span className="text-[10px] text-cyber-muted">
-                  {isCaseActive ? `Case #${activeCase.id?.slice(0, 8)}` : 'Requires active case'}
-                </span>
               </div>
-            </div>
-            {isCaseActive && <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-magenta" />}
-          </button>
+              <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-cyan" />
+            </button>
 
-          {/* Accusation */}
-          <button
-            type="button"
-            disabled={!isCaseActive}
-            onClick={() => isCaseActive && handleNav(`/accuse/${activeCase.id}`)}
-            className={`w-full flex items-center justify-between p-3 rounded border text-left transition-all ${
-              isCaseActive
-                ? 'bg-cyber-subsurface/60 hover:bg-cyber-red/10 border-cyber-border hover:border-cyber-red/50 group cursor-pointer'
-                : 'bg-cyber-subsurface/30 border-cyber-border/40 opacity-50 cursor-not-allowed'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Crosshair className={`w-4 h-4 ${isCaseActive ? 'text-cyber-red' : 'text-cyber-muted'}`} />
-              <div>
-                <span className="font-bold text-cyber-text text-xs block">ACCUSATION CHAMBER</span>
-                <span className="text-[10px] text-cyber-muted">
-                  {isCaseActive ? 'Submit final perpetrator verdict' : 'Requires active case'}
-                </span>
+            {/* New Case */}
+            <button
+              type="button"
+              onClick={() => handleNav('/create')}
+              className="w-full flex items-center justify-between p-2.5 rounded bg-cyber-subsurface/60 hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-left transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <PlusCircle className="w-4 h-4 text-cyber-green group-hover:scale-110 transition-transform" />
+                <div>
+                  <span className="font-bold text-cyber-text text-xs block">INITIALIZE NEW CASE</span>
+                  <span className="text-[10px] text-cyber-muted">Synthesize premise via Gemini GenAI</span>
+                </div>
               </div>
-            </div>
-            {isCaseActive && <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-red" />}
-          </button>
+              <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-cyan" />
+            </button>
 
-          {/* Results */}
-          <button
-            type="button"
-            disabled={!isCaseCompleted}
-            onClick={() => isCaseCompleted && handleNav(`/results/${activeCase.id}`)}
-            className={`w-full flex items-center justify-between p-3 rounded border text-left transition-all ${
-              isCaseCompleted
-                ? 'bg-cyber-subsurface/60 hover:bg-cyber-green/10 border-cyber-border hover:border-cyber-green/50 group cursor-pointer'
-                : 'bg-cyber-subsurface/30 border-cyber-border/40 opacity-50 cursor-not-allowed'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <Award className={`w-4 h-4 ${isCaseCompleted ? 'text-cyber-green' : 'text-cyber-muted'}`} />
-              <div>
-                <span className="font-bold text-cyber-text text-xs block">VERDICT DEBRIEF</span>
-                <span className="text-[10px] text-cyber-muted">
-                  {isCaseCompleted ? 'View verified score & solution' : 'Available upon case completion'}
-                </span>
+            {/* Case Archive & Stats */}
+            <button
+              type="button"
+              onClick={() => handleNav('/archive')}
+              className="w-full flex items-center justify-between p-2.5 rounded bg-cyber-subsurface/60 hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-left transition-all group"
+            >
+              <div className="flex items-center space-x-3">
+                <Archive className="w-4 h-4 text-cyber-cyan group-hover:scale-110 transition-transform" />
+                <div>
+                  <span className="font-bold text-cyber-text text-xs block">ARCHIVE &amp; DETECTIVE STATS</span>
+                  <span className="text-[10px] text-cyber-muted">Case dossiers, performance KPIs &amp; badges</span>
+                </div>
               </div>
-            </div>
-            {isCaseCompleted && <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-green" />}
-          </button>
+              <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-cyan" />
+            </button>
+          </div>
 
-          {/* Central Case Archive & Stats */}
-          <button
-            type="button"
-            onClick={() => handleNav('/archive')}
-            className="w-full flex items-center justify-between p-3 rounded bg-cyber-subsurface/60 hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-left transition-all group"
-          >
-            <div className="flex items-center space-x-3">
-              <Archive className="w-4 h-4 text-cyber-cyan group-hover:scale-110 transition-transform" />
-              <div>
-                <span className="font-bold text-cyber-text text-xs block">ARCHIVE &amp; DETECTIVE STATS</span>
-                <span className="text-[10px] text-cyber-muted">Dossier history, performance KPIs, &amp; achievements</span>
+          {/* Section 2: Active Investigation Context */}
+          <div className="space-y-1.5 pt-2 border-t border-cyber-border/60">
+            <span className="text-[10px] text-cyber-muted uppercase tracking-wider font-bold px-1 flex items-center justify-between">
+              <span>// ACTIVE INVESTIGATION</span>
+              {isCaseActive && <StatusBadge size="xs" variant="amber">IN PROGRESS</StatusBadge>}
+            </span>
+
+            {isCaseActive ? (
+              <div className="space-y-1.5">
+                {/* Investigation Room */}
+                <button
+                  type="button"
+                  onClick={() => handleNav(`/investigation/${activeCase.id}`)}
+                  className="w-full flex items-center justify-between p-2.5 rounded bg-cyber-subsurface/60 hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-left transition-all group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <Compass className="w-4 h-4 text-cyber-cyan" />
+                    <div>
+                      <span className="font-bold text-cyber-text text-xs block">DOSSIER &amp; EVIDENCE BOARD</span>
+                      <span className="text-[10px] text-cyber-muted">
+                        Case #{activeCase.id?.slice(0, 8)} • {activeCase.title || 'Untitled'}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-cyan" />
+                </button>
+
+                {/* Accusation */}
+                <button
+                  type="button"
+                  onClick={() => handleNav(`/accuse/${activeCase.id}`)}
+                  className="w-full flex items-center justify-between p-2.5 rounded bg-cyber-subsurface/60 hover:bg-cyber-red/10 border border-cyber-border hover:border-cyber-red/50 text-left transition-all group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <Crosshair className="w-4 h-4 text-cyber-red" />
+                    <div>
+                      <span className="font-bold text-cyber-text text-xs block">ACCUSATION CHAMBER</span>
+                      <span className="text-[10px] text-cyber-muted">Submit perpetrator verdict</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-red" />
+                </button>
+
+                {/* Results (if completed) */}
+                {isCaseCompleted && (
+                  <button
+                    type="button"
+                    onClick={() => handleNav(`/results/${activeCase.id}`)}
+                    className="w-full flex items-center justify-between p-2.5 rounded bg-cyber-subsurface/60 hover:bg-cyber-green/10 border border-cyber-border hover:border-cyber-green/50 text-left transition-all group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Award className="w-4 h-4 text-cyber-green" />
+                      <div>
+                        <span className="font-bold text-cyber-text text-xs block">VERDICT DEBRIEF</span>
+                        <span className="text-[10px] text-cyber-muted">View verified score &amp; solution</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-green" />
+                  </button>
+                )}
               </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-cyan" />
-          </button>
+            ) : (
+              <div className="p-3 rounded bg-cyber-subsurface/30 border border-cyber-border/40 text-center space-y-1.5">
+                <p className="text-[11px] text-cyber-muted">No investigation currently loaded in session.</p>
+                <button
+                  type="button"
+                  onClick={() => handleNav('/create')}
+                  className="inline-flex items-center space-x-1 text-[10px] text-cyber-cyan hover:underline font-bold"
+                >
+                  <span>+ Synthesize New Mystery Case</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Case Archive Accordion */}
           <div className="pt-2 border-t border-cyber-border/60">

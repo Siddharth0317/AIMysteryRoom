@@ -57,7 +57,7 @@ export default function App() {
           {/* Canonical Routes per SPEC.md */}
           <Route
             path="/"
-            element={<Home activeCase={activeCase} />}
+            element={<Home activeCase={activeCase} onCaseCreated={handleCaseCreated} />}
           />
           <Route
             path="/create"
