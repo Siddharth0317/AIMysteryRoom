@@ -112,3 +112,31 @@ export function toCaseResult(caseDoc) {
     scoreBreakdown: raw.scoreBreakdown || null,
   };
 }
+
+/**
+ * Player-Safe Case Summary for Case History & Archive (SPEC.md Section 17.7)
+ * Never leaks culpritId, solution, or active case scores.
+ */
+export function toPlayerSafeCaseSummary(caseDoc) {
+  if (!caseDoc) return null;
+  const raw = typeof caseDoc.toObject === 'function' ? caseDoc.toObject() : caseDoc;
+  const isCompleted = raw.status === 'completed';
+  const culprit = isCompleted ? (raw.suspects || []).find((s) => s.id === raw.culpritId) : null;
+
+  return {
+    id: raw._id ? raw._id.toString() : raw.id,
+    title: raw.title,
+    premise: raw.premise,
+    difficulty: raw.difficulty,
+    status: raw.status || 'active',
+    createdAt: raw.createdAt || new Date().toISOString(),
+    totalClues: (raw.clues || []).length,
+    discoveredClueCount: (raw.discoveredClueIds || []).length,
+    hintsUsed: raw.hintsUsed || 0,
+    interrogationsCount: (raw.interrogations || []).length,
+    isCorrect: isCompleted ? raw.isCorrect : null,
+    score: isCompleted ? (raw.score || 0) : null,
+    culpritName: culprit ? culprit.name : null,
+  };
+}
+

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Terminal, Shield, Plus, RotateCcw, Settings, User, Menu, Compass, Crosshair, Award } from 'lucide-react';
+import { Terminal, Shield, Plus, RotateCcw, Settings, User, Menu, Compass, Crosshair, Award, Archive } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 import CyberButton from '../common/CyberButton';
 import SettingsModal from './SettingsModal';
@@ -126,6 +126,16 @@ export default function TopNav({
               >
                 <span className="hidden sm:inline">NEW</span> CASE
               </CyberButton>
+            </Link>
+
+            {/* Archive & Stats Button */}
+            <Link
+              to="/archive"
+              className="hidden sm:flex items-center space-x-1 px-2.5 py-1.5 rounded bg-cyber-surface hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-cyber-muted hover:text-cyber-cyan text-xs transition-all"
+              title="View Case Archive, Statistics, and Detective Achievements"
+            >
+              <Archive className="w-3.5 h-3.5" />
+              <span className="hidden md:inline text-[11px]">ARCHIVE</span>
             </Link>
 
             {/* Reset View Button */}

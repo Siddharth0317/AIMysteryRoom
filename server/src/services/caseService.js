@@ -466,3 +466,16 @@ export async function saveCaseBoard(caseId, { nodes = [], edges = [] }) {
 export function clearMemoryCases() {
   memoryCases.clear();
 }
+
+/**
+ * Retrieves all cases sorted by creation date for history, stats, and achievements
+ */
+export async function getAllCasesList() {
+  if (isDbConnected()) {
+    return await Case.find().sort({ createdAt: -1 });
+  }
+  return Array.from(memoryCases.values()).sort(
+    (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  );
+}
+

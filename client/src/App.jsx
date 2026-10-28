@@ -6,6 +6,7 @@ import CreateMystery from './pages/CreateMystery';
 import InvestigationRoom from './pages/InvestigationRoom';
 import Accusation from './pages/Accusation';
 import Results from './pages/Results';
+import CaseArchive from './pages/CaseArchive';
 import NotFound from './pages/NotFound';
 import { getActiveMockCase, clearActiveMockCase, saveMockCase } from './utils/mockCase';
 
@@ -88,6 +89,18 @@ export default function App() {
                 latestResult={latestResult}
               />
             }
+          />
+          <Route
+            path="/archive"
+            element={<CaseArchive onSelectCase={handleCaseCreated} />}
+          />
+          <Route
+            path="/history"
+            element={<CaseArchive onSelectCase={handleCaseCreated} />}
+          />
+          <Route
+            path="/stats"
+            element={<CaseArchive onSelectCase={handleCaseCreated} />}
           />
 
           {/* Compatibility Aliases for /case/:id */}

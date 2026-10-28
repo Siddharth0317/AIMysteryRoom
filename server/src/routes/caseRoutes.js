@@ -13,18 +13,56 @@ import {
 
 const router = express.Router();
 
-// 1. Create a new case
+// 1. List cases (History / Archive)
+router.get(
+  '/',
+  caseController.listCases
+);
+
+// 2. Initialize or retrieve today's Daily Mystery
+router.post(
+  '/daily',
+  caseController.getDailyCase
+);
+
+// 3. Player statistics overview
+router.get(
+  '/stats/overview',
+  caseController.getPlayerStats
+);
+
+// 4. Player achievements overview
+router.get(
+  '/achievements/overview',
+  caseController.getPlayerAchievements
+);
+
+// 5. Create a new case
 router.post(
   '/',
   validateBody(createCaseSchema),
   caseController.createCase
 );
 
-// 2. Retrieve active player-safe case
+// 6. Retrieve active player-safe case
 router.get(
   '/:id',
   validateParams(caseIdParamSchema),
   caseController.getCase
+);
+
+// 7. Adaptive difficulty assistance suggestion (SPEC.md Section 17.5)
+router.get(
+  '/:id/assistance',
+  validateParams(caseIdParamSchema),
+  caseController.getCaseAssistance
+);
+
+// 8. Replay completed case (creates fresh run without mutating original)
+router.post(
+  '/:id/replay',
+  validateParams(caseIdParamSchema),
+  caseController.replayCase
 );
 
 // 3. Discover forensic clue

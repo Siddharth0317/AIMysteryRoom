@@ -28,6 +28,8 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 
+import * as caseController from './controllers/caseController.js';
+
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -35,9 +37,13 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     service: 'AI Mystery Room API',
     database: isDbConnected() ? 'connected' : 'memory-fallback',
-    phase: 'Phase 4 - Production Ready Core',
+    phase: 'Phase 7 - Adaptive Difficulty & Player Progress',
   });
 });
+
+// Direct Aliases for Stats and Achievements
+app.get('/api/stats', caseController.getPlayerStats);
+app.get('/api/achievements', caseController.getPlayerAchievements);
 
 // Mount Case API Routes
 app.use('/api/cases', caseRoutes);

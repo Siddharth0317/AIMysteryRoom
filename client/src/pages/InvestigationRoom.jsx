@@ -36,6 +36,33 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
   const [selectedAccusedId, setSelectedAccusedId] = useState('');
   const [initialLoading, setInitialLoading] = useState(!activeCase && Boolean(currentCaseId));
 
+  // Adaptive Assistance Copilot States (SPEC.md Section 17.5)
+  const [copilotSuggestion, setCopilotSuggestion] = useState(null);
+  const [copilotDismissed, setCopilotDismissed] = useState(false);
+  const [challengeMode, setChallengeMode] = useState(false);
+
+  // Evaluate Adaptive Assistance when in-game progress signals change
+  useEffect(() => {
+    if (currentCaseId && !challengeMode) {
+      casesApi.getCaseAssistance(currentCaseId, challengeMode)
+        .then((res) => {
+          if (res?.recommendation) {
+            setCopilotSuggestion(res.recommendation);
+          } else {
+            setCopilotSuggestion(null);
+          }
+        })
+        .catch(() => setCopilotSuggestion(null));
+    }
+  }, [
+    currentCaseId,
+    activeCase?.clues?.filter((c) => c.discovered).length,
+    activeCase?.hintsUsed,
+    activeCase?.interrogations?.length,
+    activeCase?.boardState?.edges?.length,
+    challengeMode,
+  ]);
+
   // Initialize first suspect as default pinned or interrogated
   useEffect(() => {
     if (activeCase?.suspects?.length > 0 && pinnedIds.size === 0) {
@@ -333,6 +360,47 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
           message={actionError}
           onDismiss={() => setActionError(null)}
         />
+      )}
+
+      {/* Tactical AI Copilot / Adaptive Assistance Banner (SPEC.md Section 17.5 & 17.9) */}
+      {copilotSuggestion && !copilotDismissed && !challengeMode && (
+        <div className="p-3 bg-cyber-cyan/10 border border-cyber-cyan/40 rounded-lg flex items-center justify-between gap-3 text-xs shadow-sm">
+          <div className="flex items-start space-x-2.5 min-w-0">
+            <Sparkles className="w-4 h-4 text-cyber-cyan shrink-0 mt-0.5 animate-pulse" />
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-cyber-cyan uppercase tracking-wider text-[10px]">
+                  TACTICAL COPILOT // SYSTEM GUIDANCE:
+                </span>
+                <span className="text-[9px] text-cyber-muted hidden sm:inline">
+                  [OPTIONAL • NEVER DEDUCTS HINTS OR POINTS]
+                </span>
+              </div>
+              <p className="text-cyber-text text-xs leading-relaxed mt-0.5">
+                {copilotSuggestion.message}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setChallengeMode(true)}
+              className="text-[10px] text-cyber-muted hover:text-cyber-amber px-2 py-0.5 rounded border border-cyber-border hover:border-cyber-amber/50 transition-colors hidden sm:block"
+              title="Disable automated hints (Challenge Mode)"
+            >
+              CHALLENGE MODE
+            </button>
+            <button
+              type="button"
+              onClick={() => setCopilotDismissed(true)}
+              className="text-cyber-muted hover:text-cyber-cyan text-xs font-bold px-1"
+              title="Dismiss suggestion"
+            >
+              ×
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Main 3-Column Murder Board Grid (Collapses on small viewports) */}

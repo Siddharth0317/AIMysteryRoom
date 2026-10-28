@@ -108,6 +108,56 @@ export async function getCaseAnalysis(caseId) {
   return response.data.analysis;
 }
 
+/**
+ * 11. List cases for history / archive (SPEC.md Section 17.7)
+ */
+export async function listCases(params = {}) {
+  const response = await client.get('/api/cases', { params });
+  return response.data; // { cases, totalCount }
+}
+
+/**
+ * 12. Retrieve detective statistics overview
+ */
+export async function getPlayerStats() {
+  const response = await client.get('/api/stats');
+  return response.data.stats;
+}
+
+/**
+ * 13. Retrieve detective achievements overview
+ */
+export async function getPlayerAchievements() {
+  const response = await client.get('/api/achievements');
+  return response.data; // { achievements, unlockedCount, totalCount, completionPercentage }
+}
+
+/**
+ * 14. Initialize or retrieve today's Daily Mystery (SPEC.md Section 17.8)
+ */
+export async function getDailyCase() {
+  const response = await client.post('/api/cases/daily');
+  return response.data; // { dailyDate, isExisting, case }
+}
+
+/**
+ * 15. Replay an existing completed case without mutating original
+ */
+export async function replayCase(caseId) {
+  const response = await client.post(`/api/cases/${caseId}/replay`);
+  return response.data; // { replayedCaseId, case }
+}
+
+/**
+ * 16. Retrieve adaptive assistance suggestion (SPEC.md Section 17.5)
+ */
+export async function getCaseAssistance(caseId, challengeMode = false) {
+  const response = await client.get(`/api/cases/${caseId}/assistance`, {
+    params: { challengeMode: Boolean(challengeMode) },
+  });
+  return response.data; // { mode, recommendation }
+}
+
 export default {
   createCase,
   getCase,
@@ -119,5 +169,12 @@ export default {
   submitAccusation,
   getCaseResult,
   getCaseAnalysis,
+  listCases,
+  getPlayerStats,
+  getPlayerAchievements,
+  getDailyCase,
+  replayCase,
+  getCaseAssistance,
 };
+
 

@@ -162,6 +162,22 @@ export default function NavMenuModal({ isOpen, onClose, activeCase }) {
             {isCaseCompleted && <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-green" />}
           </button>
 
+          {/* Central Case Archive & Stats */}
+          <button
+            type="button"
+            onClick={() => handleNav('/archive')}
+            className="w-full flex items-center justify-between p-3 rounded bg-cyber-subsurface/60 hover:bg-cyber-cyan/10 border border-cyber-border hover:border-cyber-cyan/50 text-left transition-all group"
+          >
+            <div className="flex items-center space-x-3">
+              <Archive className="w-4 h-4 text-cyber-cyan group-hover:scale-110 transition-transform" />
+              <div>
+                <span className="font-bold text-cyber-text text-xs block">ARCHIVE &amp; DETECTIVE STATS</span>
+                <span className="text-[10px] text-cyber-muted">Dossier history, performance KPIs, &amp; achievements</span>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-cyber-muted group-hover:text-cyber-cyan" />
+          </button>
+
           {/* Case Archive Accordion */}
           <div className="pt-2 border-t border-cyber-border/60">
             <button

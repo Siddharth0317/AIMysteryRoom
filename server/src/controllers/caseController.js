@@ -1,4 +1,6 @@
 import * as caseService from '../services/caseService.js';
+import * as playerProgressService from '../services/playerProgressService.js';
+import { evaluateAdaptiveAssistance } from '../services/adaptiveService.js';
 import { toPlayerSafeCase } from '../services/caseSerializer.js';
 
 export async function createCase(req, res, next) {
@@ -107,4 +109,64 @@ export async function getCaseAnalysis(req, res, next) {
     next(err);
   }
 }
+
+export async function listCases(req, res, next) {
+  try {
+    const { limit, status } = req.query;
+    const result = await playerProgressService.listPlayerCases({ limit, status });
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getPlayerStats(req, res, next) {
+  try {
+    const stats = await playerProgressService.getPlayerStats();
+    res.status(200).json({ stats });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getPlayerAchievements(req, res, next) {
+  try {
+    const data = await playerProgressService.getPlayerAchievements();
+    res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getDailyCase(req, res, next) {
+  try {
+    const result = await playerProgressService.getOrCreateDailyCase();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function replayCase(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await playerProgressService.replayCase(id);
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getCaseAssistance(req, res, next) {
+  try {
+    const { id } = req.params;
+    const challengeMode = req.query.challengeMode === 'true';
+    const caseDoc = await caseService.getCaseById(id);
+    const assistance = evaluateAdaptiveAssistance(caseDoc, { challengeMode });
+    res.status(200).json(assistance);
+  } catch (err) {
+    next(err);
+  }
+}
+
 
