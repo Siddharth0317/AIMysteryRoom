@@ -20,32 +20,39 @@ export default function AgentProfileModal({ isOpen, onClose, activeCase }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="agent-profile-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cyber-bg/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cyber-bg/85 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md bg-cyber-surface border border-cyber-cyan/50 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs"
+        className="relative w-full max-w-md bg-cyber-surface border border-cyber-cyan/50 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs max-h-[88vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Terminal Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-cyber-subsurface border-b border-cyber-border">
-          <div className="flex items-center space-x-2 text-cyber-cyan">
-            <User className="w-4 h-4" />
-            <h2 id="agent-profile-modal-title" className="font-display font-bold tracking-wider text-sm uppercase text-cyber-text">
+        <div className="flex items-center justify-between px-4 py-3 bg-cyber-subsurface border-b border-cyber-border shrink-0">
+          <div className="flex items-center space-x-2 text-cyber-cyan min-w-0">
+            <User className="w-4 h-4 shrink-0" />
+            <h2 id="agent-profile-modal-title" className="font-display font-bold tracking-wider text-sm uppercase text-cyber-text truncate">
               DETECTIVE DOSSIER &amp; SESSION
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close detective dossier window"
-            className="p-1 rounded text-cyber-muted hover:text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center space-x-2 shrink-0">
+            <span className="hidden sm:inline-block text-[10px] text-cyber-muted border border-cyber-border/70 px-1.5 py-0.5 rounded">
+              ESC
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close detective dossier window"
+              className="flex items-center space-x-1 px-2 py-1 rounded text-cyber-muted hover:text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors border border-transparent hover:border-cyber-cyan/40"
+            >
+              <X className="w-4 h-4" />
+              <span className="text-[11px] font-bold">QUIT</span>
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           {/* Agent Identity Card */}
           <div className="flex items-center space-x-4 p-3 rounded-lg bg-cyber-subsurface border border-cyber-border">
             <div className="w-12 h-12 rounded bg-cyber-bg border border-cyber-cyan/60 flex items-center justify-center text-cyber-cyan shadow-neon-cyan shrink-0">
@@ -90,7 +97,7 @@ export default function AgentProfileModal({ isOpen, onClose, activeCase }) {
 
           {/* Active Case Telemetry */}
           <div className="p-3 rounded bg-cyber-subsurface/40 border border-cyber-border space-y-1.5 text-[11px]">
-            <span className="text-[10px] text-cyber-muted uppercase block">
+            <span className="text-[10px] text-cyber-muted uppercase block font-bold">
               CURRENT ASSIGNMENT
             </span>
             {activeCase ? (
@@ -98,7 +105,7 @@ export default function AgentProfileModal({ isOpen, onClose, activeCase }) {
                 <div className="text-cyber-text font-bold truncate">
                   {activeCase.title || activeCase.premise?.slice(0, 40)}
                 </div>
-                <div className="flex items-center space-x-2 text-[10px] text-cyber-muted">
+                <div className="flex items-center space-x-2 text-[10px] text-cyber-muted flex-wrap gap-1">
                   <span>ID: {activeCase.id?.slice(0, 10)}</span>
                   <span>•</span>
                   <span className="text-cyber-cyan uppercase">{activeCase.difficulty} TIER</span>
@@ -115,9 +122,10 @@ export default function AgentProfileModal({ isOpen, onClose, activeCase }) {
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-end px-4 py-3 bg-cyber-subsurface border-t border-cyber-border">
-          <CyberButton variant="ghost" size="sm" onClick={onClose}>
-            DISMISS
+        <div className="flex items-center justify-between px-4 py-3 bg-cyber-subsurface border-t border-cyber-border shrink-0">
+          <span className="text-[10px] text-cyber-muted">CYBER-DOSSIER v1.0</span>
+          <CyberButton variant="ghost" size="sm" icon={X} onClick={onClose}>
+            DISMISS [ESC]
           </CyberButton>
         </div>
       </div>

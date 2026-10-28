@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { Shield, Compass, FileText, AlertTriangle, Sparkles, Key, CheckCircle, Crosshair, Pin, MessageSquare, Send, Link as LinkIcon, Eye, EyeOff, Layers, UserCheck } from 'lucide-react';
+import { Shield, Compass, FileText, AlertTriangle, Sparkles, Key, CheckCircle, Crosshair, Pin, MessageSquare, Send, Link as LinkIcon, Eye, EyeOff, Layers, UserCheck, Award } from 'lucide-react';
 import TerminalPanel from '../components/common/TerminalPanel';
 import StatusBadge from '../components/common/StatusBadge';
 import CyberButton from '../components/common/CyberButton';
@@ -340,16 +340,29 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
               </div>
             </div>
 
-            <Link to={`/accuse/${caseId}`}>
-              <CyberButton
-                variant="danger"
-                size="sm"
-                icon={Crosshair}
-                className="shadow-md shadow-cyber-red/20 text-xs"
-              >
-                ACCUSE SUSPECT
-              </CyberButton>
-            </Link>
+            {status === 'completed' ? (
+              <Link to={`/results/${caseId}`}>
+                <CyberButton
+                  variant="green"
+                  size="sm"
+                  icon={Award}
+                  className="shadow-neon-green text-xs"
+                >
+                  VIEW VERDICT
+                </CyberButton>
+              </Link>
+            ) : (
+              <Link to={`/accuse/${caseId}`}>
+                <CyberButton
+                  variant="danger"
+                  size="sm"
+                  icon={Crosshair}
+                  className="shadow-md shadow-cyber-red/20 text-xs"
+                >
+                  ACCUSE SUSPECT
+                </CyberButton>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -561,6 +574,7 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
             maxHints={maxHints}
             onRequestHint={handleRequestHint}
             isLoading={hintLoading}
+            isCompleted={status === 'completed'}
           />
         </div>
 
@@ -744,45 +758,75 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
             ))}
           </div>
 
-          {/* FINAL VERDICT PANEL (matching bottom right of screenshot) */}
-          <TerminalPanel
-            title="FINAL VERDICT"
-            subtitle="ISSUE ACCUSATION WARRANT"
-            badge={<StatusBadge size="xs" variant="red">CRITICAL</StatusBadge>}
-          >
-            <div className="space-y-3 text-xs">
-              <label className="text-[10px] text-cyber-muted uppercase block">
-                Designate Primary Suspect:
-              </label>
+          {/* FINAL VERDICT PANEL */}
+          {status === 'completed' ? (
+            <TerminalPanel
+              title="VERDICT FINALIZED"
+              subtitle="CASE ARCHIVED &amp; LOCKED"
+              badge={<StatusBadge size="xs" variant="green">COMPLETED</StatusBadge>}
+            >
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded bg-cyber-green/10 border border-cyber-green/40 space-y-1">
+                  <span className="text-[10px] text-cyber-green font-bold uppercase block">
+                    INVESTIGATION CONCLUDED
+                  </span>
+                  <p className="text-cyber-muted text-[11px] leading-relaxed">
+                    The final accusation has been evaluated and recorded on the central server. The official debrief is unlocked.
+                  </p>
+                </div>
 
-              <select
-                value={selectedAccusedId}
-                onChange={(e) => setSelectedAccusedId(e.target.value)}
-                className="w-full bg-cyber-bg border border-cyber-border rounded px-3 py-2 text-xs text-cyber-text focus:outline-none focus:border-cyber-red font-mono"
-              >
-                <option value="">Select Accused...</option>
-                {suspects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.role})
-                  </option>
-                ))}
-              </select>
+                <Link to={`/results/${caseId}`} className="block">
+                  <CyberButton
+                    variant="green"
+                    size="md"
+                    icon={Award}
+                    className="w-full shadow-neon-green"
+                  >
+                    VIEW VERDICT &amp; DEBRIEF
+                  </CyberButton>
+                </Link>
+              </div>
+            </TerminalPanel>
+          ) : (
+            <TerminalPanel
+              title="FINAL VERDICT"
+              subtitle="ISSUE ACCUSATION WARRANT"
+              badge={<StatusBadge size="xs" variant="red">CRITICAL</StatusBadge>}
+            >
+              <div className="space-y-3 text-xs">
+                <label className="text-[10px] text-cyber-muted uppercase block">
+                  Designate Primary Suspect:
+                </label>
 
-              <CyberButton
-                variant="danger"
-                size="md"
-                icon={Crosshair}
-                onClick={handleIssueWarrant}
-                className="w-full shadow-lg shadow-cyber-red/30"
-              >
-                ISSUE WARRANT
-              </CyberButton>
+                <select
+                  value={selectedAccusedId}
+                  onChange={(e) => setSelectedAccusedId(e.target.value)}
+                  className="w-full bg-cyber-bg border border-cyber-border rounded px-3 py-2 text-xs text-cyber-text focus:outline-none focus:border-cyber-red font-mono"
+                >
+                  <option value="">Select Accused...</option>
+                  {suspects.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.role})
+                    </option>
+                  ))}
+                </select>
 
-              <p className="text-[10px] text-cyber-muted leading-tight">
-                Accusation triggers authoritative backend verification. Case locks permanently upon submission.
-              </p>
-            </div>
-          </TerminalPanel>
+                <CyberButton
+                  variant="danger"
+                  size="md"
+                  icon={Crosshair}
+                  onClick={handleIssueWarrant}
+                  className="w-full shadow-lg shadow-cyber-red/30"
+                >
+                  ISSUE WARRANT
+                </CyberButton>
+
+                <p className="text-[10px] text-cyber-muted leading-tight">
+                  Accusation triggers authoritative backend verification. Case locks permanently upon submission.
+                </p>
+              </div>
+            </TerminalPanel>
+          )}
         </div>
       </div>
     </div>

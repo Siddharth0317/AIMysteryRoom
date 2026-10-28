@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Compass,
   CheckCircle,
+  Archive,
 } from 'lucide-react';
 import TerminalPanel from '../components/common/TerminalPanel';
 import StatusBadge from '../components/common/StatusBadge';
@@ -304,7 +305,7 @@ export default function Results({ activeCase, latestResult }) {
       <ScoreBreakdown breakdown={result.scoreBreakdown} />
 
       {/* Next Actions Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 border-t border-cyber-border">
+      <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-cyber-border">
         <Link to="/create" className="w-full sm:w-auto">
           <CyberButton
             variant="primary"
@@ -316,12 +317,36 @@ export default function Results({ activeCase, latestResult }) {
           </CyberButton>
         </Link>
 
+        {currentCaseId && (
+          <Link to={`/investigation/${currentCaseId}`} className="w-full sm:w-auto">
+            <CyberButton
+              variant="secondary"
+              size="lg"
+              icon={Compass}
+              className="w-full sm:w-auto"
+            >
+              REVIEW CASE DOSSIER
+            </CyberButton>
+          </Link>
+        )}
+
+        <Link to="/archive" className="w-full sm:w-auto">
+          <CyberButton
+            variant="ghost"
+            size="lg"
+            icon={Archive}
+            className="w-full sm:w-auto border-cyber-border hover:border-cyber-cyan"
+          >
+            ARCHIVES &amp; STATS
+          </CyberButton>
+        </Link>
+
         <Link to="/" className="w-full sm:w-auto">
           <CyberButton
             variant="ghost"
             size="lg"
             icon={Home}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto border-cyber-border"
           >
             RETURN TO TERMINAL
           </CyberButton>

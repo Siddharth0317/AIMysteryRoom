@@ -10,6 +10,7 @@ export default function HintTerminal({
   maxHints = 3,
   onRequestHint,
   isLoading = false,
+  isCompleted = false,
 }) {
   const remaining = Math.max(0, maxHints - hintsUsed);
   const isLimitReached = remaining === 0;
@@ -72,7 +73,11 @@ export default function HintTerminal({
 
       {/* Action Footer */}
       <div className="mt-5 pt-3 border-t border-cyber-border">
-        {isLimitReached ? (
+        {isCompleted ? (
+          <div className="text-center p-2 rounded bg-cyber-subsurface border border-cyber-border text-cyber-muted text-xs font-mono">
+            INVESTIGATION CONCLUDED // HINTS LOCKED
+          </div>
+        ) : isLimitReached ? (
           <div className="text-center p-2 rounded bg-cyber-red/10 border border-cyber-red/30 text-cyber-red text-xs font-mono font-bold">
             HINT ALLOCATION EXHAUSTED FOR THIS CASE
           </div>
@@ -82,7 +87,7 @@ export default function HintTerminal({
             size="md"
             className="w-full"
             onClick={onRequestHint}
-            disabled={isLoading || isLimitReached}
+            disabled={isLoading || isLimitReached || isCompleted}
             icon={Lightbulb}
           >
             {isLoading ? 'Accessing Neural Guidance...' : `Request Tactical Hint (-10 Pts)`}

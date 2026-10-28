@@ -27,14 +27,20 @@ export default function AccusationModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="accusation-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cyber-bg/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cyber-bg/80 backdrop-blur-md animate-fade-in"
+      onClick={() => {
+        if (!isSubmitting && onCancel) onCancel();
+      }}
     >
-      <div className="relative w-full max-w-lg bg-cyber-surface border border-cyber-red/70 rounded-lg p-6 font-mono shadow-2xl shadow-cyber-red/20">
+      <div
+        className="relative w-full max-w-lg bg-cyber-surface border border-cyber-red/70 rounded-lg p-5 sm:p-6 font-mono shadow-2xl shadow-cyber-red/20 max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Terminal Header */}
-        <div className="flex items-center space-x-3 text-cyber-red border-b border-cyber-red/40 pb-3 mb-4">
-          <ShieldAlert className="w-6 h-6 animate-pulse" />
-          <div>
-            <h2 id="accusation-modal-title" className="font-bold text-sm uppercase tracking-wider text-cyber-red">
+        <div className="flex items-center space-x-3 text-cyber-red border-b border-cyber-red/40 pb-3 mb-3 shrink-0">
+          <ShieldAlert className="w-6 h-6 animate-pulse shrink-0" />
+          <div className="min-w-0">
+            <h2 id="accusation-modal-title" className="font-bold text-sm uppercase tracking-wider text-cyber-red truncate">
               CONFIRM FINAL ACCUSATION
             </h2>
             <p className="text-[11px] text-cyber-muted">
@@ -43,8 +49,8 @@ export default function AccusationModal({
           </div>
         </div>
 
-        {/* Warning Body */}
-        <div className="space-y-4 my-4 text-xs">
+        {/* Warning Body (Scrollable) */}
+        <div className="space-y-4 my-2 text-xs overflow-y-auto flex-1 pr-1">
           <div className="bg-cyber-subsurface border border-cyber-border p-3.5 rounded">
             <span className="text-[10px] text-cyber-muted uppercase block mb-1">
               ACCUSED PERPETRATOR:
@@ -66,8 +72,8 @@ export default function AccusationModal({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end space-x-3 pt-3 border-t border-cyber-border">
+        {/* Action Buttons (Fixed at bottom) */}
+        <div className="flex items-center justify-end space-x-3 pt-3 border-t border-cyber-border shrink-0 mt-2">
           <CyberButton
             variant="ghost"
             size="md"
@@ -75,7 +81,7 @@ export default function AccusationModal({
             disabled={isSubmitting}
             icon={X}
           >
-            Cancel &amp; Review Evidence
+            Cancel &amp; Review
           </CyberButton>
 
           <CyberButton
@@ -85,7 +91,7 @@ export default function AccusationModal({
             disabled={isSubmitting}
             icon={Check}
           >
-            {isSubmitting ? 'Evaluating Accusation...' : 'Submit Final Accusation'}
+            {isSubmitting ? 'Evaluating...' : 'Confirm Accusation'}
           </CyberButton>
         </div>
       </div>

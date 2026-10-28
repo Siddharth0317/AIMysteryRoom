@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
-import { Crosshair, ShieldAlert, AlertTriangle, ArrowLeft, Check } from 'lucide-react';
+import { Crosshair, ShieldAlert, AlertTriangle, ArrowLeft, Check, Award } from 'lucide-react';
 import TerminalPanel from '../components/common/TerminalPanel';
+import StatusBadge from '../components/common/StatusBadge';
 import CyberButton from '../components/common/CyberButton';
 import SuspectCard from '../components/mystery/SuspectCard';
 import AccusationModal from '../components/mystery/AccusationModal';
@@ -32,6 +33,46 @@ export default function Accusation({ activeCase, onAccusationSubmitted }) {
         actionLabel="INITIALIZE CASE"
         onAction={() => navigate('/create')}
       />
+    );
+  }
+
+  // If the investigation has already concluded, seal the accusation chamber
+  if (activeCase.status === 'completed') {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 font-mono py-8 animate-fade-in">
+        <TerminalPanel
+          title="ACCUSATION CHAMBER SEALED"
+          subtitle="CASE ALREADY FINALIZED"
+          badge={<StatusBadge size="xs" variant="green">VERDICT LOCKED</StatusBadge>}
+        >
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center space-x-3 p-3.5 rounded bg-cyber-subsurface border border-cyber-border">
+              <ShieldAlert className="w-6 h-6 text-cyber-amber shrink-0" />
+              <div>
+                <span className="font-bold text-cyber-text text-sm block">
+                  INVESTIGATION CONCLUDED
+                </span>
+                <p className="text-cyber-muted text-[11px] mt-0.5 leading-relaxed">
+                  Case #{caseId?.slice(0, 8)} ({activeCase.title || 'Untitled'}) has reached final resolution. The accusation chamber is permanently sealed and the authoritative score is recorded on the central server.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <Link to={`/results/${caseId}`} className="w-full sm:w-auto flex-1">
+                <CyberButton variant="green" size="md" icon={Award} className="w-full shadow-neon-green">
+                  VIEW FINAL VERDICT &amp; ANALYSIS
+                </CyberButton>
+              </Link>
+              <Link to={`/investigation/${caseId}`} className="w-full sm:w-auto">
+                <CyberButton variant="ghost" size="md" icon={ArrowLeft} className="w-full border-cyber-border">
+                  REVIEW EVIDENCE DOSSIER
+                </CyberButton>
+              </Link>
+            </div>
+          </div>
+        </TerminalPanel>
+      </div>
     );
   }
 
