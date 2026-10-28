@@ -49,7 +49,7 @@ test('Gemini Service: generateMysteryCase succeeds with valid mock Gemini client
     ],
     culpritId: 'suspect_1',
     solution: 'Dr. Anna Vance used her lab laser to breach the canister.',
-    evidenceMapping: [{ clueId: 'clue_1', supports: 'Proves laser usage' }],
+    evidenceMapping: [{ clueId: 'clue_1', supports: 'Proves laser usage by Dr. Anna Vance' }],
   });
 
   const mockClient = {

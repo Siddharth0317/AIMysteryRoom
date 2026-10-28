@@ -2,6 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { DIFFICULTY_RULES, ERROR_CODES } from '../constants/gameRules.js';
 import { generatedCaseSchema } from '../validators/caseSchemas.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { validateMysteryCase } from './caseValidationService.js';
 
 /**
  * Builds system & user prompt enforcing exact counts and schema constraints
@@ -40,6 +41,7 @@ STRICT STRUCTURAL REQUIREMENTS:
    - culpritId: MUST match one of the suspect IDs (e.g. "suspect_1")
    - solution: detailed explanation of how the crime was committed and how the clues prove the culprit's guilt
 8. evidenceMapping: array of objects with "clueId" and "supports" explaining how each clue supports the solution or serves as a fair red herring.
+9. ZERO-LEAKAGE MANDATE: Player-facing clues, story, and hints must NOT spoil the solution or state "the culprit is..." outright.
 
 Return ONLY a valid, raw JSON object matching this schema. Do NOT include markdown code blocks, backticks, or explanatory text before or after the JSON.`;
 }
@@ -76,9 +78,10 @@ export async function generateMysteryCase(premise, difficulty, options = {}) {
     );
   }
 
-  const prompt = buildMysteryPrompt(premise, difficulty);
+  const basePrompt = buildMysteryPrompt(premise, difficulty);
+  let prompt = basePrompt;
   let attempts = 0;
-  const maxAttempts = 2; // 1 initial attempt + 1 bounded retry
+  const maxAttempts = options.maxAttempts || 2; // bounded attempts per SPEC.md Section 17.2
   let lastError = null;
 
   while (attempts < maxAttempts) {
@@ -93,7 +96,7 @@ export async function generateMysteryCase(premise, difficulty, options = {}) {
           contents: prompt,
           config: {
             responseMimeType: 'application/json',
-            temperature: 0.7,
+            temperature: attempts > 1 ? 0.3 : 0.7, // Lower temperature on repair attempt
           },
         });
         rawText = response.text;
@@ -122,24 +125,56 @@ export async function generateMysteryCase(premise, difficulty, options = {}) {
       // Ensure difficulty matches requested
       parsed.difficulty = difficulty;
 
-      // Strict validation with Zod
+      // 1. Strict structural schema validation with Zod
       const validatedCase = generatedCaseSchema.parse(parsed);
+
+      // 2. Comprehensive AI Mystery Consistency Validation per SPEC.md Section 17.2
+      const validationReport = await validateMysteryCase(validatedCase, {
+        client,
+        enableSemanticReview: options.enableSemanticReview !== false,
+      });
+
+      if (!validationReport.valid) {
+        const issuesSummary = validationReport.issues.join('; ');
+        throw new AppError(
+          `Consistency validation failed: ${issuesSummary}`,
+          422,
+          ERROR_CODES.AI_GENERATION_FAILED
+        );
+      }
 
       return {
         ...validatedCase,
         premise,
+        validationReport: {
+          valid: true,
+          checks: validationReport.checks,
+          repairAttempted: attempts > 1,
+        },
       };
     } catch (err) {
       lastError = err;
       console.warn(`[AI-MYSTERY-ROOM] Gemini generation attempt ${attempts} failed: ${err.message}`);
-      if (attempts >= maxAttempts) break;
+
+      if (attempts < maxAttempts) {
+        // Construct targeted repair prompt for the bounded retry
+        prompt = `${basePrompt}
+
+CRITICAL REPAIR INSTRUCTIONS:
+The previous case generation failed automated forensic consistency checks:
+${err.message}
+
+Please repair and regenerate the entire mystery case addressing every issue listed above. Ensure culprit references are exact, clues substantiate the solution without contradictions, and no player-facing text spoils the conclusion.`;
+      }
     }
   }
 
-  // If retries failed, throw safe error
+  // If retries failed, throw safe error without leaking internal details
   throw new AppError(
-    lastError?.message?.includes('malformed') || lastError?.name === 'ZodError'
-      ? `AI case generation failed structural validation: ${lastError.message}`
+    lastError?.message?.includes('malformed') ||
+    lastError?.name === 'ZodError' ||
+    lastError?.message?.includes('Consistency validation')
+      ? `AI case generation failed consistency validation after retries: ${lastError.message}`
       : 'Upstream AI generation failed. Please try a different premise or retry.',
     422,
     ERROR_CODES.AI_GENERATION_FAILED
