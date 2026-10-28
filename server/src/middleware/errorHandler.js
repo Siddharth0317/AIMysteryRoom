@@ -16,6 +16,13 @@ export function errorHandler(err, req, res, next) {
   let errorCode = err.code || ERROR_CODES.INTERNAL_SERVER_ERROR;
   let message = err.message || 'An unexpected internal error occurred.';
 
+  // Handle CORS Forbidden Rejection
+  if (err.message && err.message.startsWith('CORS blocked request')) {
+    statusCode = 403;
+    errorCode = 'CORS_FORBIDDEN';
+    message = 'Cross-Origin Request Blocked by Security Policy.';
+  }
+
   // Handle Zod Validation Errors
   if (err instanceof ZodError) {
     statusCode = 400;

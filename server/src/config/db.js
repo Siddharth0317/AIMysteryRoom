@@ -10,9 +10,10 @@ export async function connectDB() {
   }
 
   try {
+    const isProd = process.env.NODE_ENV === 'production';
     const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 2000,
-      connectTimeoutMS: 2000,
+      serverSelectionTimeoutMS: isProd ? 10000 : 2000,
+      connectTimeoutMS: isProd ? 10000 : 2000,
     });
     isConnected = true;
     console.log(`[AI-MYSTERY-ROOM] MongoDB Connected: ${conn.connection.host}`);

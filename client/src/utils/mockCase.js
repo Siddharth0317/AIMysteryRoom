@@ -99,13 +99,7 @@ export const MOCK_CASES = {
         id: "hint_e2",
         text: "Financial records reveal an immediate payout upon successful execution of the lockout."
       }
-    ],
-    // Server-only data in real backend, stored here for Phase 1 local evaluation
-    _secret: {
-      culpritId: "suspect_e3",
-      culpritName: "Jax Miller",
-      solution: "Officer Jax Miller accepted an 80,000 Credit bribe from AetherCorp. He temporarily disabled the VIP ballroom frequency jammer at 23:14, allowing the pre-loaded override signal to shut down Dr. Ward's chassis."
-    }
+    ]
   },
 
   "case-med-409": {
@@ -205,12 +199,7 @@ export const MOCK_CASES = {
         id: "hint_m3",
         text: "The hardware fiber scrubber links the culprit directly to cryptographic hardware manipulation, eliminating non-cryptographic suspects."
       }
-    ],
-    _secret: {
-      culpritId: "suspect_m1",
-      culpritName: "Dr. Hideo Vance",
-      solution: "Dr. Hideo Vance used his cryptographic master clearance to inject an 8-minute loop into the CCTV feeds, sabotaged the cooling manifold to trigger an emergency evacuation protocol, and purged the neural ledger after beaming an encrypted copy to the Neon Syndicate to clear his black-market debt."
-    }
+    ]
   },
 
   "case-hard-901": {
@@ -330,12 +319,30 @@ export const MOCK_CASES = {
         id: "hint_h3",
         text: "The detonation code and cloned card both tie back to executive-level access, eliminating lower-tier personnel."
       }
-    ],
-    _secret: {
-      culpritId: "suspect_h1",
-      culpritName: "Director Kazuo Sato",
-      solution: "Director Kazuo Sato shorted the grid's power SLA futures for a massive financial windfall. He deliberately triggered the confinement collapse from his personal comms, escaped the stalled elevator through the roof hatch into the mainframe duct, and extracted the cipher while blaming the incident on an external cyber-attack."
-    }
+    ]
+  }
+};
+
+/**
+ * Module-private secret storage for simulated local cases.
+ * Strictly adheres to SPEC.md Zero-Leakage Policy:
+ * Secrets are NEVER stored in localStorage or exposed on the active case object.
+ */
+const MOCK_CASE_SECRETS = {
+  "case-easy-101": {
+    culpritId: "suspect_e3",
+    culpritName: "Jax Miller",
+    solution: "Officer Jax Miller accepted an 80,000 Credit bribe from AetherCorp. He temporarily disabled the VIP ballroom frequency jammer at 23:14, allowing the pre-loaded override signal to shut down Dr. Ward's chassis."
+  },
+  "case-med-409": {
+    culpritId: "suspect_m1",
+    culpritName: "Dr. Hideo Vance",
+    solution: "Dr. Hideo Vance used his cryptographic master clearance to inject an 8-minute loop into the CCTV feeds, sabotaged the cooling manifold to trigger an emergency evacuation protocol, and purged the neural ledger after beaming an encrypted copy to the Neon Syndicate to clear his black-market debt."
+  },
+  "case-hard-901": {
+    culpritId: "suspect_h1",
+    culpritName: "Director Kazuo Sato",
+    solution: "Director Kazuo Sato shorted the grid's power SLA futures for a massive financial windfall. He deliberately triggered the confinement collapse from his personal comms, escaped the stalled elevator through the roof hatch into the mainframe duct, and extracted the cipher while blaming the incident on an external cyber-attack."
   }
 };
 
@@ -388,12 +395,18 @@ export function getCaseArchive() {
 export function saveToCaseArchive(caseData) {
   if (!caseData || !caseData.id) return;
   try {
+    const safeData = { ...caseData };
+    delete safeData._secret;
+    if (safeData.status !== 'completed') {
+      delete safeData.culpritId;
+      delete safeData.solution;
+    }
     const archive = getCaseArchive();
-    const existingIndex = archive.findIndex((c) => c.id === caseData.id);
+    const existingIndex = archive.findIndex((c) => c.id === safeData.id);
     if (existingIndex !== -1) {
-      archive[existingIndex] = { ...caseData, updatedAt: new Date().toISOString() };
+      archive[existingIndex] = { ...safeData, updatedAt: new Date().toISOString() };
     } else {
-      archive.unshift({ ...caseData, savedAt: new Date().toISOString() });
+      archive.unshift({ ...safeData, savedAt: new Date().toISOString() });
     }
     localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive.slice(0, 30)));
   } catch (err) {
@@ -402,13 +415,19 @@ export function saveToCaseArchive(caseData) {
 }
 
 /**
- * Saves case to localStorage and syncs with archive
+ * Saves case to localStorage and syncs with archive with Zero-Leakage guarantee
  */
 export function saveMockCase(caseData) {
   if (!caseData) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(caseData));
-    saveToCaseArchive(caseData);
+    const safeData = { ...caseData };
+    delete safeData._secret;
+    if (safeData.status !== 'completed') {
+      delete safeData.culpritId;
+      delete safeData.solution;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(safeData));
+    saveToCaseArchive(safeData);
   } catch (err) {
     console.warn("Could not save to localStorage", err);
   }
@@ -427,6 +446,12 @@ export function createMockCase(premise, difficulty) {
   const template = JSON.parse(JSON.stringify(MOCK_CASES[baseKey]));
   const newCaseId = `case-${Date.now().toString(36)}`;
   
+  // Isolate secret in module scope memory so it is NEVER serialized to browser storage
+  const baseSecret = MOCK_CASE_SECRETS[baseKey];
+  if (baseSecret) {
+    MOCK_CASE_SECRETS[newCaseId] = { ...baseSecret };
+  }
+
   const newCase = {
     ...template,
     id: newCaseId,
@@ -441,6 +466,10 @@ export function createMockCase(premise, difficulty) {
       discovered: idx === 0
     }))
   };
+
+  delete newCase._secret;
+  delete newCase.culpritId;
+  delete newCase.solution;
 
   saveMockCase(newCase);
   return newCase;
@@ -498,7 +527,8 @@ export function accuseMockSuspect(caseId, suspectId) {
   const currentCase = getActiveMockCase();
   if (currentCase.id !== caseId) return { error: "Case not found" };
 
-  const secret = currentCase._secret;
+  const fallbackKey = currentCase.difficulty === "easy" ? "case-easy-101" : currentCase.difficulty === "hard" ? "case-hard-901" : "case-med-409";
+  const secret = MOCK_CASE_SECRETS[caseId] || MOCK_CASE_SECRETS[fallbackKey];
   const isCorrect = secret && secret.culpritId === suspectId;
 
   // Difficulty base points

@@ -4,6 +4,7 @@ import {
   createCaseSchema,
   accuseSchema,
   generatedCaseSchema,
+  interrogateBodySchema,
 } from '../src/validators/caseSchemas.js';
 
 test('Zod Validation: createCaseSchema validates premise and difficulty', () => {
@@ -28,6 +29,11 @@ test('Zod Validation: createCaseSchema validates premise and difficulty', () => 
   assert.throws(() => {
     createCaseSchema.parse({ premise: 'Valid premise', difficulty: 'nightmare' });
   }, /Difficulty must be one of/);
+
+  // Prohibited control characters / null bytes rejection
+  assert.throws(() => {
+    createCaseSchema.parse({ premise: 'Malicious\x00Injection', difficulty: 'easy' });
+  }, /Premise contains prohibited control characters/);
 });
 
 test('Zod Validation: accuseSchema enforces non-empty suspect ID', () => {
@@ -90,4 +96,27 @@ test('Zod Validation: generatedCaseSchema validates exact counts per difficulty'
   assert.throws(() => {
     generatedCaseSchema.parse(invalidCulpritCase);
   }, /s_ghost/);
+});
+
+test('Zod Validation: interrogateBodySchema validates question constraints & rejects control characters', () => {
+  const valid = interrogateBodySchema.parse({
+    question: 'Where were you during the security breach?',
+    category: 'alibi',
+  });
+  assert.strictEqual(valid.category, 'alibi');
+
+  // Empty question
+  assert.throws(() => {
+    interrogateBodySchema.parse({ question: '   ' });
+  }, /Question cannot be empty/);
+
+  // Question > 300 chars
+  assert.throws(() => {
+    interrogateBodySchema.parse({ question: 'q'.repeat(301) });
+  }, /Question must not exceed 300 characters/);
+
+  // Null byte injection
+  assert.throws(() => {
+    interrogateBodySchema.parse({ question: 'Exploit\x00Injection' });
+  }, /Question contains prohibited control characters/);
 });

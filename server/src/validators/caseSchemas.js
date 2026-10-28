@@ -7,7 +7,10 @@ export const createCaseSchema = z.object({
     .string({ required_error: 'Premise is required' })
     .trim()
     .min(1, 'Premise cannot be empty')
-    .max(500, 'Premise must not exceed 500 characters'),
+    .max(500, 'Premise must not exceed 500 characters')
+    .refine((val) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(val), {
+      message: 'Premise contains prohibited control characters',
+    }),
   difficulty: z.enum(['easy', 'medium', 'hard'], {
     errorMap: () => ({ message: 'Difficulty must be one of: easy, medium, hard' }),
   }),
@@ -42,7 +45,10 @@ export const interrogateBodySchema = z.object({
     .string({ required_error: 'Interrogation question is required' })
     .trim()
     .min(1, 'Question cannot be empty')
-    .max(300, 'Question must not exceed 300 characters'),
+    .max(300, 'Question must not exceed 300 characters')
+    .refine((val) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(val), {
+      message: 'Question contains prohibited control characters',
+    }),
   category: z
     .string()
     .trim()

@@ -199,4 +199,15 @@ test('API Integration: Full Case Lifecycle and Secrecy Verification', async (t) 
     assert.strictEqual(res.body.verdict, 'incorrect');
     assert.strictEqual(res.body.score, 0, 'Tampered score must be completely ignored');
   });
+
+  // 11. CORS Security: Unauthorized external origin rejection
+  await t.test('CORS Security: Unauthorized origin rejected with 403 and CORS_FORBIDDEN code', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'https://malicious-unauthorized-hacker-site.org')
+      .expect(403);
+
+    assert.strictEqual(res.body.error.code, 'CORS_FORBIDDEN');
+    assert.strictEqual(res.body.error.message, 'Cross-Origin Request Blocked by Security Policy.');
+  });
 });

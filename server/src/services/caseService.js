@@ -316,7 +316,18 @@ export async function submitAccusation(caseId, suspectId) {
   };
 
   if (isDbConnected()) {
-    const updated = await Case.findByIdAndUpdate(caseId, updates, { new: true });
+    const updated = await Case.findOneAndUpdate(
+      { _id: caseId, status: 'active' },
+      updates,
+      { new: true }
+    );
+    if (!updated) {
+      throw new AppError(
+        'Case is already completed. Multiple accusations are rejected to protect score integrity.',
+        409,
+        ERROR_CODES.CASE_COMPLETED
+      );
+    }
     return toCaseResult(updated);
   }
 
