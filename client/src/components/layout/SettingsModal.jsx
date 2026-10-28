@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -81,16 +82,16 @@ export default function SettingsModal({
     navigate('/');
   };
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="settings-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cyber-bg/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-cyber-bg/85 backdrop-blur-md animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-cyber-surface border border-cyber-cyan/50 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs max-h-[88vh] flex flex-col"
+        className="relative w-full max-w-lg bg-cyber-surface border border-cyber-cyan/50 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs max-h-[85vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Terminal Header (Fixed/Sticky) */}
@@ -322,4 +323,8 @@ export default function SettingsModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 }

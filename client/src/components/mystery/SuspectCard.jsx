@@ -106,16 +106,18 @@ export default function SuspectCard({
 
           {/* Interrogation Action Button per SPEC.md */}
           {onInterrogate && (
-            <div className="pt-2 border-t border-cyber-border/40 flex justify-end">
+            <div className="pt-2.5 border-t border-cyber-border/40 flex items-center justify-between">
+              <span className="text-[10px] text-cyber-muted">INTERROGATE SUSPECT</span>
               <button
                 type="button"
+                aria-label={`Open interrogation room with ${suspect.name}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onInterrogate(suspect);
                 }}
-                className="flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold bg-cyber-cyan/10 border border-cyber-cyan/50 text-cyber-cyan hover:bg-cyber-cyan/20 transition-colors"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded text-[11px] font-bold bg-cyber-cyan/15 border border-cyber-cyan text-cyber-cyan hover:bg-cyber-cyan/30 hover:shadow-neon-cyan focus:outline-none focus:ring-2 focus:ring-cyber-cyan transition-all"
               >
-                <MessageSquare className="w-3 h-3" />
+                <MessageSquare className="w-3.5 h-3.5" />
                 <span>INTERROGATE</span>
               </button>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { Shield, Compass, FileText, AlertTriangle, Sparkles, Key, CheckCircle, Crosshair, Pin, MessageSquare, Send, Link as LinkIcon, Eye, EyeOff, Layers, UserCheck, Award } from 'lucide-react';
+import { Shield, Compass, FileText, AlertTriangle, Sparkles, Key, CheckCircle, Crosshair, Pin, MessageSquare, Send, Link as LinkIcon, Eye, EyeOff, Layers, UserCheck, Award, Maximize2 } from 'lucide-react';
 import TerminalPanel from '../components/common/TerminalPanel';
 import StatusBadge from '../components/common/StatusBadge';
 import CyberButton from '../components/common/CyberButton';
@@ -8,6 +8,7 @@ import SuspectCard from '../components/mystery/SuspectCard';
 import ClueCard from '../components/mystery/ClueCard';
 import HintTerminal from '../components/mystery/HintTerminal';
 import EvidenceBoard from '../components/mystery/EvidenceBoard';
+import InterrogationModal from '../components/mystery/InterrogationModal';
 import EmptyState from '../components/common/EmptyState';
 import ErrorBanner from '../components/common/ErrorBanner';
 import casesApi from '../api/casesApi';
@@ -28,6 +29,7 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
   const [showNeuralStrings, setShowNeuralStrings] = useState(true);
   const [filterNoise, setFilterNoise] = useState(false);
   const [activeInterrogationSuspect, setActiveInterrogationSuspect] = useState(null);
+  const [isInterrogationModalOpen, setIsInterrogationModalOpen] = useState(false);
   const [interrogationInput, setInterrogationInput] = useState('');
   const [interrogationLogs, setInterrogationLogs] = useState({});
   const [interrogating, setInterrogating] = useState(false);
@@ -224,14 +226,16 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
     }
   };
 
-  const handleInterrogationSubmit = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!interrogationInput.trim() || !activeInterrogationSuspect || interrogating) return;
+  const handleOpenInterrogation = (suspect) => {
+    setActiveInterrogationSuspect(suspect);
+    setIsInterrogationModalOpen(true);
+    setInterrogationError(null);
+  };
 
-    const query = interrogationInput.trim();
-    const suspectId = activeInterrogationSuspect.id;
-    const prevLogs = interrogationLogs[suspectId] || [];
+  const handleInterrogateQuery = async (suspectId, query, category = 'general') => {
+    if (!query || !query.trim() || !suspectId || interrogating) return;
 
+    const cleanQuery = query.trim();
     setInterrogating(true);
     setInterrogationError(null);
 
@@ -240,18 +244,25 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
       ...prev,
       [suspectId]: [
         ...(prev[suspectId] || []),
-        { sender: 'detective', text: query },
+        {
+          sender: 'detective',
+          text: cleanQuery,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
       ],
     }));
-    setInterrogationInput('');
 
     try {
-      const res = await casesApi.interrogateSuspect(caseId, suspectId, query, interrogationCategory);
+      const res = await casesApi.interrogateSuspect(caseId, suspectId, cleanQuery, category);
       setInterrogationLogs((prev) => ({
         ...prev,
         [suspectId]: [
           ...(prev[suspectId] || []),
-          { sender: 'suspect', text: res.answer },
+          {
+            sender: 'suspect',
+            text: res.answer,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
         ],
       }));
 
@@ -262,8 +273,8 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
           {
             interactionId: res.interactionId,
             suspectId: res.suspectId,
-            category: interrogationCategory,
-            question: query,
+            category,
+            question: cleanQuery,
             answer: res.answer,
             createdAt: new Date().toISOString(),
           },
@@ -285,12 +296,24 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
         ...prev,
         [suspectId]: [
           ...(prev[suspectId] || []),
-          { sender: 'suspect', text: `[TRANSMISSION INTERRUPTED: ${errMsg}]` },
+          {
+            sender: 'suspect',
+            text: `[TRANSMISSION INTERRUPTED: ${errMsg}]`,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
         ],
       }));
     } finally {
       setInterrogating(false);
     }
+  };
+
+  const handleInterrogationSubmit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!interrogationInput.trim() || !activeInterrogationSuspect || interrogating) return;
+    const query = interrogationInput.trim();
+    setInterrogationInput('');
+    handleInterrogateQuery(activeInterrogationSuspect.id, query, interrogationCategory);
   };
 
   const handleIssueWarrant = () => {
@@ -597,6 +620,7 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
               setSelectedAccusedId(suspect.id);
               setActiveInterrogationSuspect(suspect);
             }}
+            onInterrogateSuspect={handleOpenInterrogation}
           />
 
           {/* Interrogation Terminal Floating Dialog */}
@@ -623,13 +647,25 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
                     </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveInterrogationSuspect(null)}
-                  className="text-cyber-muted hover:text-cyber-cyan text-xs"
-                >
-                  ×
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsInterrogationModalOpen(true)}
+                    className="flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-bold bg-cyber-cyan/15 border border-cyber-cyan text-cyber-cyan hover:bg-cyber-cyan/30 transition-colors"
+                    title="Open full interrogation room modal"
+                  >
+                    <Maximize2 className="w-3 h-3" />
+                    <span>EXPAND ROOM</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveInterrogationSuspect(null)}
+                    className="text-cyber-muted hover:text-cyber-cyan text-xs px-1"
+                    title="Close interrogation panel"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
 
               {interrogationError && (
@@ -751,9 +787,7 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
                   setSelectedAccusedId(s.id);
                   setActiveInterrogationSuspect(s);
                 }}
-                onInterrogate={(s) => {
-                  setActiveInterrogationSuspect(s);
-                }}
+                onInterrogate={handleOpenInterrogation}
               />
             ))}
           </div>
@@ -829,6 +863,18 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
           )}
         </div>
       </div>
+
+      {/* Dedicated Cyberpunk Interrogation Room Modal */}
+      <InterrogationModal
+        isOpen={isInterrogationModalOpen}
+        onClose={() => setIsInterrogationModalOpen(false)}
+        suspect={activeInterrogationSuspect}
+        transcript={interrogationLogs[activeInterrogationSuspect?.id] || []}
+        onSendMessage={handleInterrogateQuery}
+        isSending={interrogating}
+        remainingQuestions={activeCase?.progress?.remainingInterrogations ?? 8}
+        error={interrogationError}
+      />
     </div>
   );
 }

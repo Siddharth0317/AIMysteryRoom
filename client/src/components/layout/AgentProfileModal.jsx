@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, User, ShieldCheck, Key, Lock, Terminal, Award, CheckCircle2 } from 'lucide-react';
 import CyberButton from '../common/CyberButton';
 import StatusBadge from '../common/StatusBadge';
@@ -15,16 +16,16 @@ export default function AgentProfileModal({ isOpen, onClose, activeCase }) {
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="agent-profile-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cyber-bg/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-cyber-bg/85 backdrop-blur-md animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md bg-cyber-surface border border-cyber-cyan/50 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs max-h-[88vh] flex flex-col"
+        className="relative w-full max-w-md bg-cyber-surface border border-cyber-cyan/50 rounded-lg shadow-2xl shadow-cyber-cyan/20 overflow-hidden font-mono text-xs max-h-[85vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Terminal Header */}
@@ -131,4 +132,8 @@ export default function AgentProfileModal({ isOpen, onClose, activeCase }) {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 }

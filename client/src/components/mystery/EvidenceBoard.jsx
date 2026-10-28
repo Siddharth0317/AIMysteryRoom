@@ -39,6 +39,7 @@ export default function EvidenceBoard({
   initialBoard = null,
   onBoardSaved,
   onSelectSuspect,
+  onInterrogateSuspect,
 }) {
   const discoveredClues = clues.filter((c) => c.discovered);
 
@@ -503,7 +504,7 @@ export default function EvidenceBoard({
                         </span>
                         <StatusBadge size="xs" variant="green">FACT</StatusBadge>
                       </div>
-                      <p className="text-[11px] text-cyber-muted leading-relaxed line-clamp-2">
+                      <p className="text-[11px] text-cyber-text/90 leading-relaxed whitespace-pre-line mt-1">
                         {clue.description}
                       </p>
 
@@ -574,13 +575,34 @@ export default function EvidenceBoard({
                           <h4 className="font-bold text-cyber-text text-xs">{suspect.name}</h4>
                           <span className="text-[10px] text-cyber-cyan">{suspect.role}</span>
                         </div>
-                        <StatusBadge size="xs" variant="cyan">DOSSIER</StatusBadge>
+                        <div className="flex items-center space-x-1.5 shrink-0">
+                          {onInterrogateSuspect && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onInterrogateSuspect(suspect);
+                              }}
+                              className="px-2 py-0.5 rounded text-[9px] font-bold bg-cyber-cyan/15 border border-cyber-cyan text-cyber-cyan hover:bg-cyber-cyan/30 transition-colors"
+                              title={`Interrogate ${suspect.name}`}
+                            >
+                              INTERROGATE
+                            </button>
+                          )}
+                          <StatusBadge size="xs" variant="cyan">DOSSIER</StatusBadge>
+                        </div>
                       </div>
 
-                      <div className="text-[10px] text-cyber-muted line-clamp-2 mt-1">
+                      <div className="text-[10px] text-cyber-muted mt-1 leading-relaxed">
                         <span className="text-cyber-amber font-semibold">ALIBI: </span>
-                        {suspect.alibi}
+                        <span className="text-cyber-text/80">{suspect.alibi}</span>
                       </div>
+                      {suspect.motive && (
+                        <div className="text-[10px] text-cyber-muted mt-0.5 leading-relaxed">
+                          <span className="text-cyber-cyan font-semibold">MOTIVE: </span>
+                          <span className="text-cyber-text/80">{suspect.motive}</span>
+                        </div>
+                      )}
 
                       {/* Display connected theories badges */}
                       {linkedEdges.length > 0 && (
@@ -605,6 +627,123 @@ export default function EvidenceBoard({
                 })}
               </div>
             </div>
+
+            {/* Selected Node Detailed Forensic Analysis Terminal */}
+            {selectedNodeDetails && (
+              <div className="mt-4 p-3.5 rounded-lg bg-cyber-subsurface border border-cyber-cyan/70 shadow-lg text-xs animate-fade-in relative z-20">
+                <div className="flex items-center justify-between pb-2 border-b border-cyber-border mb-2.5">
+                  <div className="flex items-center space-x-2">
+                    <Info className="w-4 h-4 text-cyber-cyan" />
+                    <span className="font-bold text-cyber-text uppercase tracking-wider text-[11px]">
+                      {selectedNodeDetails.role ? 'SUSPECT DOSSIER ANALYSIS' : 'FORENSIC RECORD TELEMETRY'} // {selectedNodeDetails.name || selectedNodeDetails.title}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNodeDetails(null)}
+                    className="text-cyber-muted hover:text-cyber-cyan text-xs font-bold px-1"
+                    title="Close inspection panel"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {selectedNodeDetails.role ? (
+                  /* Suspect Detail View */
+                  <div className="space-y-2 text-[11px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="bg-cyber-surface/80 p-2.5 rounded border border-cyber-border/60">
+                        <span className="text-cyber-amber font-bold block text-[10px] uppercase mb-0.5">
+                          STATED ALIBI:
+                        </span>
+                        <p className="text-cyber-text leading-relaxed">{selectedNodeDetails.alibi || 'No verified alibi on record.'}</p>
+                      </div>
+                      <div className="bg-cyber-surface/80 p-2.5 rounded border border-cyber-border/60">
+                        <span className="text-cyber-cyan font-bold block text-[10px] uppercase mb-0.5">
+                          POTENTIAL MOTIVE:
+                        </span>
+                        <p className="text-cyber-text leading-relaxed">{selectedNodeDetails.motive || 'No overt motive detected.'}</p>
+                      </div>
+                    </div>
+                    {selectedNodeDetails.background && (
+                      <div className="bg-cyber-surface/80 p-2.5 rounded border border-cyber-border/60">
+                        <span className="text-cyber-muted font-bold block text-[10px] uppercase mb-0.5">
+                          BACKGROUND PROFILE:
+                        </span>
+                        <p className="text-cyber-muted leading-relaxed">{selectedNodeDetails.background}</p>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-end space-x-2 pt-1">
+                      {onInterrogateSuspect && (
+                        <CyberButton
+                          variant="primary"
+                          size="xs"
+                          onClick={() => onInterrogateSuspect(selectedNodeDetails)}
+                        >
+                          INTERROGATE {selectedNodeDetails.name}
+                        </CyberButton>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* Clue Detail View */
+                  <div className="space-y-2 text-[11px]">
+                    <div className="bg-cyber-surface/80 p-2.5 rounded border border-cyber-green/40">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-cyber-green font-bold text-[10px] uppercase">
+                          CANONICAL FORENSIC RECORD // FACT #{selectedNodeDetails.id}
+                        </span>
+                        <StatusBadge size="xs" variant="green">VERIFIED FACT</StatusBadge>
+                      </div>
+                      <p className="text-cyber-text leading-relaxed whitespace-pre-line text-xs font-mono">
+                        {selectedNodeDetails.description}
+                      </p>
+                    </div>
+
+                    {/* Display all connected theories for this clue */}
+                    {(() => {
+                      const connected = edges.filter((e) => e.source === selectedNodeDetails.id);
+                      return connected.length > 0 ? (
+                        <div className="bg-cyber-surface/60 p-2 rounded border border-cyber-border/60">
+                          <span className="text-[10px] font-bold text-cyber-muted uppercase block mb-1">
+                            ACTIVE INVESTIGATIVE THEORIES LINKED:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {connected.map((edge) => {
+                              const rel = RELATIONSHIP_LABELS.find((r) => r.id === edge.label) || RELATIONSHIP_LABELS[4];
+                              const susp = suspects.find((s) => s.id === edge.target);
+                              return (
+                                <span
+                                  key={edge.id}
+                                  className="text-[10px] px-2 py-0.5 rounded border font-bold"
+                                  style={{ borderColor: rel.color, color: rel.color, backgroundColor: `${rel.color}15` }}
+                                >
+                                  [{rel.label}] → {susp ? susp.name : edge.target}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    <div className="flex items-center justify-end space-x-2 pt-1">
+                      <CyberButton
+                        variant="secondary"
+                        size="xs"
+                        icon={LinkIcon}
+                        onClick={() => {
+                          setSelectedClueId(selectedNodeDetails.id);
+                          setShowConnectModal(true);
+                        }}
+                      >
+                        FORMULATE THEORY WITH THIS EVIDENCE
+                      </CyberButton>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Empty theories notice if zero edges exist */}
             {edges.length === 0 && (

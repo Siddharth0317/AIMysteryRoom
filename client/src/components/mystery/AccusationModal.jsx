@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ShieldAlert, AlertTriangle, Check, X } from 'lucide-react';
 import CyberButton from '../common/CyberButton';
 
@@ -22,18 +23,18 @@ export default function AccusationModal({
 
   if (!isOpen || !suspect) return null;
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="accusation-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cyber-bg/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-cyber-bg/85 backdrop-blur-md animate-fade-in font-mono overflow-y-auto"
       onClick={() => {
         if (!isSubmitting && onCancel) onCancel();
       }}
     >
       <div
-        className="relative w-full max-w-lg bg-cyber-surface border border-cyber-red/70 rounded-lg p-5 sm:p-6 font-mono shadow-2xl shadow-cyber-red/20 max-h-[90vh] flex flex-col overflow-hidden"
+        className="relative w-full max-w-lg bg-cyber-surface border border-cyber-red/70 rounded-lg p-5 sm:p-6 font-mono shadow-2xl shadow-cyber-red/20 max-h-[85vh] flex flex-col overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Terminal Header */}
@@ -97,4 +98,8 @@ export default function AccusationModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 }
