@@ -35,6 +35,39 @@ const InterrogationSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 }, { _id: false });
 
+const BoardNodeSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  type: { type: String, enum: ['clue', 'suspect'], required: true },
+  x: { type: Number, default: 0 },
+  y: { type: Number, default: 0 },
+  note: { type: String, default: '', maxlength: 500 },
+  isMarked: { type: Boolean, default: false },
+}, { _id: false });
+
+const BoardEdgeSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  source: { type: String, required: true },
+  target: { type: String, required: true },
+  label: {
+    type: String,
+    enum: [
+      'supports alibi',
+      'contradicts statement',
+      'possible motive',
+      'suspicious link',
+      'unverified',
+    ],
+    default: 'unverified',
+  },
+  note: { type: String, default: '', maxlength: 300 },
+  createdAt: { type: Date, default: Date.now },
+}, { _id: false });
+
+const BoardStateSchema = new mongoose.Schema({
+  nodes: { type: [BoardNodeSchema], default: [] },
+  edges: { type: [BoardEdgeSchema], default: [] },
+}, { _id: false });
+
 const CaseSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   premise: { type: String, required: true, trim: true, maxlength: 500 },
@@ -57,6 +90,10 @@ const CaseSchema = new mongoose.Schema({
   discoveredClueIds: { type: [String], default: [] },
   hintsUsed: { type: Number, default: 0 },
   interrogations: { type: [InterrogationSchema], default: [] },
+  boardState: {
+    type: BoardStateSchema,
+    default: () => ({ nodes: [], edges: [] }),
+  },
   accusationSuspectId: { type: String, default: null },
   isCorrect: { type: Boolean, default: null },
   score: { type: Number, default: 0 },

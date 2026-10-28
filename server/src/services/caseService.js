@@ -3,7 +3,7 @@ import { Case } from '../models/Case.js';
 import { isDbConnected } from '../config/db.js';
 import { DIFFICULTY_RULES, INTERROGATION_LIMITS, ERROR_CODES } from '../constants/gameRules.js';
 import { calculateScore } from './scoringService.js';
-import { toPlayerSafeCase, toCaseResult } from './caseSerializer.js';
+import { toPlayerSafeCase, toCaseResult, toPlayerSafeBoard } from './caseSerializer.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { generateMysteryCase, generateInterrogationResponse } from './geminiService.js';
 
@@ -52,6 +52,7 @@ function createPhase2Template(premise, difficulty) {
     discoveredClueIds: [],
     hintsUsed: 0,
     interrogations: [],
+    boardState: { nodes: [], edges: [] },
     status: 'active',
     score: 0,
     isCorrect: null,
@@ -75,6 +76,7 @@ export async function createCase({ premise, difficulty, aiClient = null }) {
         discoveredClueIds: [],
         hintsUsed: 0,
         interrogations: [],
+        boardState: { nodes: [], edges: [] },
         status: 'active',
         score: 0,
         isCorrect: null,
@@ -335,6 +337,97 @@ export async function getCaseResult(caseId) {
   }
 
   return toCaseResult(caseDoc);
+}
+
+/**
+ * Retrieves player-safe evidence board state (SPEC.md Section 17.4)
+ */
+export async function getCaseBoard(caseId) {
+  const caseDoc = await getCaseById(caseId);
+  return {
+    board: toPlayerSafeBoard(caseDoc),
+  };
+}
+
+/**
+ * Saves player evidence board state with strict validation:
+ * - Only discovered clues can be placed on the board
+ * - Suspects must belong to this case
+ * - Connections do not modify case score or solution
+ */
+export async function saveCaseBoard(caseId, { nodes = [], edges = [] }) {
+  const caseDoc = await getCaseById(caseId);
+
+  const discoveredClueSet = new Set(caseDoc.discoveredClueIds || []);
+  const validSuspectSet = new Set((caseDoc.suspects || []).map((s) => s.id));
+
+  // Validate nodes
+  for (const node of nodes) {
+    if (node.type === 'clue') {
+      if (!discoveredClueSet.has(node.id)) {
+        throw new AppError(
+          `Undiscovered clue "${node.id}" cannot be placed on evidence board.`,
+          400,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+    } else if (node.type === 'suspect') {
+      if (!validSuspectSet.has(node.id)) {
+        throw new AppError(
+          `Foreign suspect "${node.id}" does not belong to this case.`,
+          400,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+    }
+  }
+
+  // Validate edges
+  const validTargetSourceSet = new Set([
+    ...nodes.map((n) => n.id),
+    ...discoveredClueSet,
+    ...validSuspectSet,
+  ]);
+
+  for (const edge of edges) {
+    if (!validTargetSourceSet.has(edge.source)) {
+      throw new AppError(
+        `Edge source "${edge.source}" does not reference a valid node on the board.`,
+        400,
+        ERROR_CODES.VALIDATION_ERROR
+      );
+    }
+    if (!validTargetSourceSet.has(edge.target)) {
+      throw new AppError(
+        `Edge target "${edge.target}" does not reference a valid node on the board.`,
+        400,
+        ERROR_CODES.VALIDATION_ERROR
+      );
+    }
+  }
+
+  const updatedBoardState = {
+    nodes,
+    edges,
+  };
+
+  if (isDbConnected()) {
+    const updated = await Case.findByIdAndUpdate(
+      caseId,
+      { boardState: updatedBoardState },
+      { new: true }
+    );
+    return {
+      board: toPlayerSafeBoard(updated),
+    };
+  }
+
+  caseDoc.boardState = updatedBoardState;
+  memoryCases.set(caseId, caseDoc);
+
+  return {
+    board: toPlayerSafeBoard(caseDoc),
+  };
 }
 
 // Memory cleaner for isolated test runs

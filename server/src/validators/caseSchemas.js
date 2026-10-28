@@ -51,6 +51,39 @@ export const interrogateBodySchema = z.object({
     .default('general'),
 });
 
+// Interactive Evidence Board Schemas (SPEC.md Section 17.4)
+export const boardNodeSchema = z.object({
+  id: z.string().trim().min(1, 'Node ID is required'),
+  type: z.enum(['clue', 'suspect'], {
+    errorMap: () => ({ message: 'Node type must be either "clue" or "suspect"' }),
+  }),
+  x: z.number().optional().default(0),
+  y: z.number().optional().default(0),
+  note: z.string().max(500, 'Note cannot exceed 500 characters').optional().default(''),
+  isMarked: z.boolean().optional().default(false),
+});
+
+export const boardEdgeSchema = z.object({
+  id: z.string().trim().min(1, 'Edge ID is required'),
+  source: z.string().trim().min(1, 'Source ID is required'),
+  target: z.string().trim().min(1, 'Target ID is required'),
+  label: z.enum([
+    'supports alibi',
+    'contradicts statement',
+    'possible motive',
+    'suspicious link',
+    'unverified',
+  ], {
+    errorMap: () => ({ message: 'Label must be one of: supports alibi, contradicts statement, possible motive, suspicious link, unverified' }),
+  }).default('unverified'),
+  note: z.string().max(300, 'Edge note cannot exceed 300 characters').optional().default(''),
+});
+
+export const saveBoardSchema = z.object({
+  nodes: z.array(boardNodeSchema).max(30, 'Cannot exceed 30 nodes on board'),
+  edges: z.array(boardEdgeSchema).max(50, 'Cannot exceed 50 connections on board'),
+});
+
 // Structural Schemas for Case Generation & Verification
 export const suspectSchema = z.object({
   id: z.string().min(1),

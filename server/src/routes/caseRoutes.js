@@ -8,6 +8,7 @@ import {
   discoverClueParamSchema,
   interrogateParamSchema,
   interrogateBodySchema,
+  saveBoardSchema,
 } from '../validators/caseSchemas.js';
 
 const router = express.Router();
@@ -48,7 +49,22 @@ router.post(
   caseController.interrogateSuspect
 );
 
-// 5. Submit final accusation
+// 6. Retrieve player evidence board
+router.get(
+  '/:id/board',
+  validateParams(caseIdParamSchema),
+  caseController.getBoard
+);
+
+// 7. Save player evidence board
+router.put(
+  '/:id/board',
+  validateParams(caseIdParamSchema),
+  validateBody(saveBoardSchema),
+  caseController.saveBoard
+);
+
+// 8. Submit final accusation
 router.post(
   '/:id/accuse',
   validateParams(caseIdParamSchema),
@@ -56,7 +72,7 @@ router.post(
   caseController.submitAccusation
 );
 
-// 6. Retrieve case verdict and solution (only allowed when completed)
+// 9. Retrieve case verdict and solution (only allowed when completed)
 router.get(
   '/:id/result',
   validateParams(caseIdParamSchema),

@@ -69,7 +69,23 @@ export async function interrogateSuspect(caseId, suspectId, question, category =
 }
 
 /**
- * 6. Submit final accusation
+ * 6. Retrieve player evidence board
+ */
+export async function getBoard(caseId) {
+  const response = await client.get(`/api/cases/${caseId}/board`);
+  return response.data; // { board: { nodes, edges } }
+}
+
+/**
+ * 7. Save player evidence board
+ */
+export async function saveBoard(caseId, { nodes, edges }) {
+  const response = await client.put(`/api/cases/${caseId}/board`, { nodes, edges });
+  return response.data; // { board: { nodes, edges } }
+}
+
+/**
+ * 8. Submit final accusation
  */
 export async function submitAccusation(caseId, suspectId) {
   const response = await client.post(`/api/cases/${caseId}/accuse`, { suspectId });
@@ -77,7 +93,7 @@ export async function submitAccusation(caseId, suspectId) {
 }
 
 /**
- * 7. Retrieve case result and debrief
+ * 9. Retrieve case result and debrief
  */
 export async function getCaseResult(caseId) {
   const response = await client.get(`/api/cases/${caseId}/result`);
@@ -90,6 +106,8 @@ export default {
   discoverClue,
   requestHint,
   interrogateSuspect,
+  getBoard,
+  saveBoard,
   submitAccusation,
   getCaseResult,
 };

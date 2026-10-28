@@ -76,3 +76,24 @@ export async function getCaseResult(req, res, next) {
     next(err);
   }
 }
+
+export async function getBoard(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await caseService.getCaseBoard(id);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function saveBoard(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { nodes, edges } = req.body;
+    const result = await caseService.saveCaseBoard(id, { nodes, edges });
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}

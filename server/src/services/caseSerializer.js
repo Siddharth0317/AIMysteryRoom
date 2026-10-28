@@ -60,6 +60,7 @@ export function toPlayerSafeCase(caseDoc) {
       remainingInterrogations: Math.max(0, maxInterrogations - rawInterrogations.length),
       status: raw.status || 'active',
     },
+    boardState: toPlayerSafeBoard(raw),
   };
 
   // Explicit safety assertions: ensure zero leakage
@@ -68,6 +69,29 @@ export function toPlayerSafeCase(caseDoc) {
   delete safeCase.evidenceMapping;
 
   return safeCase;
+}
+
+export function toPlayerSafeBoard(caseDoc) {
+  if (!caseDoc) return { nodes: [], edges: [] };
+  const raw = typeof caseDoc.toObject === 'function' ? caseDoc.toObject() : caseDoc;
+  const discoveredSet = new Set(raw.discoveredClueIds || []);
+  const rawBoard = raw.boardState || { nodes: [], edges: [] };
+
+  const safeNodes = (rawBoard.nodes || []).filter((node) => {
+    if (node.type === 'clue') {
+      return discoveredSet.has(node.id);
+    }
+    return true;
+  });
+  const safeNodeIdSet = new Set(safeNodes.map((n) => n.id));
+  const safeEdges = (rawBoard.edges || []).filter(
+    (edge) => safeNodeIdSet.has(edge.source) && safeNodeIdSet.has(edge.target)
+  );
+
+  return {
+    nodes: safeNodes,
+    edges: safeEdges,
+  };
 }
 
 export function toCaseResult(caseDoc) {

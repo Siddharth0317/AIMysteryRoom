@@ -7,6 +7,7 @@ import CyberButton from '../components/common/CyberButton';
 import SuspectCard from '../components/mystery/SuspectCard';
 import ClueCard from '../components/mystery/ClueCard';
 import HintTerminal from '../components/mystery/HintTerminal';
+import EvidenceBoard from '../components/mystery/EvidenceBoard';
 import EmptyState from '../components/common/EmptyState';
 import ErrorBanner from '../components/common/ErrorBanner';
 import casesApi from '../api/casesApi';
@@ -436,281 +437,158 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
           />
         </div>
 
-        {/* Center Column (6 Cols): INTERACTIVE MURDER BOARD */}
+        {/* Center Column (6 Cols): INTERACTIVE EVIDENCE BOARD & INTERROGATION */}
         <div className="lg:col-span-6 space-y-4">
-          <TerminalPanel
-            title="MURDER BOARD"
-            subtitle="NEURAL EVIDENCE MATRIX"
-            badge={<StatusBadge size="xs" variant="magenta">ACTIVE BOARD</StatusBadge>}
-            scanlines
-          >
-            {/* Murder Board Controls Toolbar (matching screenshot: AUTO-LINK, HIDE NOISE, CLEAR STRINGS) */}
-            <div className="flex items-center justify-between flex-wrap gap-2 pb-3 mb-3 border-b border-cyber-border text-xs">
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNeuralStrings((prev) => !prev)}
-                  className={`flex items-center space-x-1 px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
-                    showNeuralStrings
-                      ? 'bg-cyber-cyan/20 text-cyber-cyan border-cyber-cyan'
-                      : 'bg-cyber-surface text-cyber-muted border-cyber-border'
-                  }`}
-                >
-                  <LinkIcon className="w-3 h-3" />
-                  <span>{showNeuralStrings ? 'STRINGS ON' : 'AUTO-LINK'}</span>
-                </button>
+          <EvidenceBoard
+            caseId={caseId}
+            suspects={suspects}
+            clues={clues}
+            initialBoard={activeCase?.boardState}
+            onBoardSaved={(newBoard) => {
+              if (onCaseUpdated && activeCase) {
+                onCaseUpdated({
+                  ...activeCase,
+                  boardState: newBoard,
+                });
+              }
+            }}
+            onSelectSuspect={(suspect) => {
+              setSelectedAccusedId(suspect.id);
+              setActiveInterrogationSuspect(suspect);
+            }}
+          />
 
-                <button
-                  type="button"
-                  onClick={() => setFilterNoise((prev) => !prev)}
-                  className={`flex items-center space-x-1 px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
-                    filterNoise
-                      ? 'bg-cyber-magenta/20 text-cyber-magenta border-cyber-magenta'
-                      : 'bg-cyber-surface text-cyber-muted border-cyber-border'
-                  }`}
-                >
-                  {filterNoise ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                  <span>{filterNoise ? 'SHOWING PINNED' : 'HIDE NOISE'}</span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setPinnedIds(new Set())}
-                className="text-[10px] text-cyber-muted hover:text-cyber-red px-2 py-1 transition-colors"
-              >
-                CLEAR STRINGS
-              </button>
-            </div>
-
-            {/* Murder Board Corkboard Area */}
-            <div className="relative min-h-[360px] bg-cyber-bg/90 rounded-lg p-4 border border-cyber-border/70 overflow-hidden">
-              {/* Retro corkboard grid background */}
-              <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none" />
-
-              {/* Neural connecting strings (SVG paths connecting pinned suspects and clues) */}
-              {showNeuralStrings && pinnedIds.size > 1 && (
-                <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-70">
-                  <line
-                    x1="25%"
-                    y1="35%"
-                    x2="70%"
-                    y2="28%"
-                    stroke="#35F2FF"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 2"
-                  />
-                  <line
-                    x1="70%"
-                    y1="28%"
-                    x2="50%"
-                    y2="75%"
-                    stroke="#FF3DF2"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
-                  />
-                  <line
-                    x1="25%"
-                    y1="35%"
-                    x2="50%"
-                    y2="75%"
-                    stroke="#A3FF12"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-              )}
-
-              {/* Pinned Suspects & Evidence Cards in Corkboard style */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
-                {suspects.slice(0, 4).map((suspect, idx) => {
-                  const isPinned = pinnedIds.has(suspect.id);
-                  if (filterNoise && !isPinned) return null;
-
-                  return (
-                    <div
-                      key={suspect.id}
-                      onClick={() => setActiveInterrogationSuspect(suspect)}
-                      className={`relative p-3 rounded-lg border cursor-pointer transition-all ${
-                        activeInterrogationSuspect?.id === suspect.id
-                          ? 'bg-cyber-surface border-cyber-cyan shadow-neon-cyan scale-[1.02]'
-                          : 'bg-cyber-surface/75 border-cyber-border hover:border-cyber-cyan/50'
-                      }`}
-                    >
-                      {/* Red / Cyan Pin Indicator */}
-                      <div className="absolute -top-1.5 left-4 w-3 h-3 rounded-full bg-cyber-red border border-white shadow-sm flex items-center justify-center">
-                        <div className="w-1 h-1 rounded-full bg-white" />
-                      </div>
-
-                      <div className="flex items-start justify-between gap-2 pt-1">
-                        <div>
-                          <span className="text-[10px] text-cyber-cyan uppercase font-bold block">
-                            SUSPECT #{idx + 1}
-                          </span>
-                          <h4 className="font-bold text-cyber-text text-xs">{suspect.name}</h4>
-                          <span className="text-[10px] text-cyber-muted block">{suspect.role}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            togglePin(suspect.id);
-                          }}
-                          className={`p-1 rounded text-[10px] ${
-                            isPinned ? 'text-cyber-cyan bg-cyber-cyan/20' : 'text-cyber-muted'
-                          }`}
-                          title="Pin/unpin suspect"
-                        >
-                          <Pin className="w-3 h-3" />
-                        </button>
-                      </div>
-
-                      <div className="mt-2 text-[10px] text-cyber-muted line-clamp-2">
-                        <span className="text-cyber-amber font-bold">ALIBI: </span>
-                        {suspect.alibi}
-                      </div>
-
-                      <div className="mt-2 pt-1.5 border-t border-cyber-border/60 flex items-center justify-between text-[9px]">
-                        <span className="text-cyber-cyan">INTERROGATE →</span>
-                        {isPinned && <span className="text-cyber-green font-bold">PINNED</span>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Interrogation Terminal Floating Dialog */}
-              {activeInterrogationSuspect && (
-                <div className="mt-4 p-3 rounded-lg bg-cyber-subsurface border border-cyber-cyan/70 shadow-lg relative z-20 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-cyber-border mb-2">
+          {/* Interrogation Terminal Floating Dialog */}
+          {activeInterrogationSuspect && (
+            <div className="p-3 rounded-lg bg-cyber-subsurface border border-cyber-cyan/70 shadow-lg relative z-20 text-xs">
+              <div className="flex items-center justify-between pb-2 border-b border-cyber-border mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 rounded bg-cyber-cyan/20 border border-cyber-cyan flex items-center justify-center text-cyber-cyan text-[10px]">
+                    #
+                  </div>
+                  <div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded bg-cyber-cyan/20 border border-cyber-cyan flex items-center justify-center text-cyber-cyan text-[10px]">
-                        #
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-cyber-text text-xs">
-                            {activeInterrogationSuspect.name}
-                          </span>
-                          <span className="text-[10px] text-cyber-cyan">({activeInterrogationSuspect.role})</span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-[9px]">
-                          <span className="text-cyber-green">CHANNEL SECURED</span>
-                          <span className="text-cyber-border">|</span>
-                          <span className="text-cyber-amber font-bold">
-                            REMAINING QUESTIONS: {activeCase?.progress?.remainingInterrogations ?? 8}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveInterrogationSuspect(null)}
-                      className="text-cyber-muted hover:text-cyber-cyan text-xs"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  {interrogationError && (
-                    <div className="mb-2 p-1.5 bg-cyber-red/10 border border-cyber-red/50 rounded text-cyber-red text-[10px]">
-                      {interrogationError}
-                    </div>
-                  )}
-
-                  {/* Suggested Category Chips */}
-                  <div className="flex items-center space-x-1 mb-2 overflow-x-auto pb-1 text-[9px]">
-                    {[
-                      { id: 'alibi', label: 'ALIBI / TIMELINE', prompt: 'Where exactly were you at the time of the incident?' },
-                      { id: 'motive', label: 'MOTIVE / CONFLICT', prompt: 'What motive or conflict did you have regarding this facility?' },
-                      { id: 'clue', label: 'FORENSIC EVIDENCE', prompt: 'What do you know about the discovered physical evidence?' },
-                      { id: 'general', label: 'DIRECT QUESTION', prompt: '' },
-                    ].map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          setInterrogationCategory(cat.id);
-                          if (cat.prompt && !interrogationInput) {
-                            setInterrogationInput(cat.prompt);
-                          }
-                        }}
-                        className={`px-2 py-0.5 rounded border whitespace-nowrap transition-colors ${
-                          interrogationCategory === cat.id
-                            ? 'bg-cyber-cyan/20 text-cyber-cyan border-cyber-cyan'
-                            : 'bg-cyber-bg text-cyber-muted border-cyber-border/70 hover:border-cyber-cyan/50'
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Transcript History */}
-                  <div className="space-y-2 max-h-36 overflow-y-auto pr-1 text-[11px] mb-3">
-                    <div className="bg-cyber-surface p-2 rounded border border-cyber-border/70 text-cyber-text">
-                      <span className="text-cyber-cyan font-bold block text-[10px]">
-                        {activeInterrogationSuspect.name}:
+                      <span className="font-bold text-cyber-text text-xs">
+                        {activeInterrogationSuspect.name}
                       </span>
-                      Detective, you requested my testimony. What do you want to inquire about?
+                      <span className="text-[10px] text-cyber-cyan">({activeInterrogationSuspect.role})</span>
                     </div>
-
-                    <div className="bg-cyber-surface p-2 rounded border border-cyber-border/70 text-cyber-muted">
-                      <span className="text-cyber-amber font-bold block text-[10px]">
-                        STATED MOTIVE / PROFILE:
+                    <div className="flex items-center space-x-2 text-[9px]">
+                      <span className="text-cyber-green">CHANNEL SECURED</span>
+                      <span className="text-cyber-border">|</span>
+                      <span className="text-cyber-amber font-bold">
+                        REMAINING QUESTIONS: {activeCase?.progress?.remainingInterrogations ?? 8}
                       </span>
-                      {activeInterrogationSuspect.motive || 'No explicit motive confirmed.'}
                     </div>
-
-                    {(interrogationLogs[activeInterrogationSuspect.id] || []).map((entry, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-2 rounded border ${
-                          entry.sender === 'detective'
-                            ? 'bg-cyber-cyan/10 border-cyber-cyan/40 text-cyber-cyan ml-4'
-                            : 'bg-cyber-surface border-cyber-border text-cyber-text'
-                        }`}
-                      >
-                        {entry.text}
-                      </div>
-                    ))}
-                    {interrogating && (
-                      <div className="p-2 rounded bg-cyber-cyan/10 border border-cyber-cyan/40 text-cyber-cyan text-[10px] animate-pulse">
-                        TRANSMITTING NEURAL INTERROGATION QUERY...
-                      </div>
-                    )}
                   </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveInterrogationSuspect(null)}
+                  className="text-cyber-muted hover:text-cyber-cyan text-xs"
+                >
+                  ×
+                </button>
+              </div>
 
-                  {/* Interrogation Query Input */}
-                  {(activeCase?.progress?.remainingInterrogations ?? 8) <= 0 ? (
-                    <div className="p-2 bg-cyber-bg border border-cyber-border text-cyber-muted text-center rounded text-[10px]">
-                      INTERROGATION BUDGET EXHAUSTED FOR THIS CASE
-                    </div>
-                  ) : (
-                    <form onSubmit={handleInterrogationSubmit} className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={interrogationInput}
-                        onChange={(e) => setInterrogationInput(e.target.value)}
-                        placeholder="Type interrogation query (max 300 chars)..."
-                        disabled={interrogating}
-                        className="flex-1 bg-cyber-bg border border-cyber-border rounded px-3 py-1.5 text-xs text-cyber-text focus:outline-none focus:border-cyber-cyan font-mono disabled:opacity-50"
-                      />
-                      <CyberButton
-                        variant="primary"
-                        size="xs"
-                        icon={Send}
-                        type="submit"
-                        disabled={interrogating || !interrogationInput.trim()}
-                      >
-                        {interrogating ? 'QUERYING...' : 'SEND'}
-                      </CyberButton>
-                    </form>
-                  )}
+              {interrogationError && (
+                <div className="mb-2 p-1.5 bg-cyber-red/10 border border-cyber-red/50 rounded text-cyber-red text-[10px]">
+                  {interrogationError}
                 </div>
               )}
+
+              {/* Suggested Category Chips */}
+              <div className="flex items-center space-x-1 mb-2 overflow-x-auto pb-1 text-[9px]">
+                {[
+                  { id: 'alibi', label: 'ALIBI / TIMELINE', prompt: 'Where exactly were you at the time of the incident?' },
+                  { id: 'motive', label: 'MOTIVE / CONFLICT', prompt: 'What motive or conflict did you have regarding this facility?' },
+                  { id: 'clue', label: 'FORENSIC EVIDENCE', prompt: 'What do you know about the discovered physical evidence?' },
+                  { id: 'general', label: 'DIRECT QUESTION', prompt: '' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      setInterrogationCategory(cat.id);
+                      if (cat.prompt && !interrogationInput) {
+                        setInterrogationInput(cat.prompt);
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded border whitespace-nowrap transition-colors ${
+                      interrogationCategory === cat.id
+                        ? 'bg-cyber-cyan/20 text-cyber-cyan border-cyber-cyan'
+                        : 'bg-cyber-bg text-cyber-muted border-cyber-border/70 hover:border-cyber-cyan/50'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Transcript History */}
+              <div className="space-y-2 max-h-36 overflow-y-auto pr-1 text-[11px] mb-3">
+                <div className="bg-cyber-surface p-2 rounded border border-cyber-border/70 text-cyber-text">
+                  <span className="text-cyber-cyan font-bold block text-[10px]">
+                    {activeInterrogationSuspect.name}:
+                  </span>
+                  Detective, you requested my testimony. What do you want to inquire about?
+                </div>
+
+                <div className="bg-cyber-surface p-2 rounded border border-cyber-border/70 text-cyber-muted">
+                  <span className="text-cyber-amber font-bold block text-[10px]">
+                    STATED MOTIVE / PROFILE:
+                  </span>
+                  {activeInterrogationSuspect.motive || 'No explicit motive confirmed.'}
+                </div>
+
+                {(interrogationLogs[activeInterrogationSuspect.id] || []).map((entry, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-2 rounded border ${
+                      entry.sender === 'detective'
+                        ? 'bg-cyber-cyan/10 border-cyber-cyan/40 text-cyber-cyan ml-4'
+                        : 'bg-cyber-surface border-cyber-border text-cyber-text'
+                    }`}
+                  >
+                    {entry.text}
+                  </div>
+                ))}
+                {interrogating && (
+                  <div className="p-2 rounded bg-cyber-cyan/10 border border-cyber-cyan/40 text-cyber-cyan text-[10px] animate-pulse">
+                    TRANSMITTING NEURAL INTERROGATION QUERY...
+                  </div>
+                )}
+              </div>
+
+              {/* Interrogation Query Input */}
+              {(activeCase?.progress?.remainingInterrogations ?? 8) <= 0 ? (
+                <div className="p-2 bg-cyber-bg border border-cyber-border text-cyber-muted text-center rounded text-[10px]">
+                  INTERROGATION BUDGET EXHAUSTED FOR THIS CASE
+                </div>
+              ) : (
+                <form onSubmit={handleInterrogationSubmit} className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    maxLength={300}
+                    value={interrogationInput}
+                    onChange={(e) => setInterrogationInput(e.target.value)}
+                    placeholder="Type interrogation query (max 300 chars)..."
+                    disabled={interrogating}
+                    className="flex-1 bg-cyber-bg border border-cyber-border rounded px-3 py-1.5 text-xs text-cyber-text focus:outline-none focus:border-cyber-cyan font-mono disabled:opacity-50"
+                  />
+                  <CyberButton
+                    variant="primary"
+                    size="xs"
+                    icon={Send}
+                    type="submit"
+                    disabled={interrogating || !interrogationInput.trim()}
+                  >
+                    {interrogating ? 'QUERYING...' : 'SEND'}
+                  </CyberButton>
+                </form>
+              )}
             </div>
-          </TerminalPanel>
+          )}
         </div>
 
         {/* Right Column (3 Cols): SUSPECTS DOSSIER & FINAL VERDICT */}
