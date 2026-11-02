@@ -42,6 +42,22 @@ app.use(express.json({ limit: '1mb' }));
 
 import * as caseController from './controllers/caseController.js';
 
+// Root Welcome & Diagnostic Endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'online',
+    service: 'AI Mystery Room API',
+    database: isDbConnected() ? 'connected (MongoDB Atlas)' : 'memory-fallback',
+    phase: 'Phase 9 - Production Verified',
+    endpoints: {
+      health: '/api/health',
+      cases: '/api/cases',
+      stats: '/api/stats',
+      achievements: '/api/achievements',
+    },
+  });
+});
+
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
