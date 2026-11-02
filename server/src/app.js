@@ -37,7 +37,7 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     service: 'AI Mystery Room API',
     database: isDbConnected() ? 'connected' : 'memory-fallback',
-    phase: 'Phase 7 - Adaptive Difficulty & Player Progress',
+    phase: 'Phase 9 - Production Verified',
   });
 });
 
