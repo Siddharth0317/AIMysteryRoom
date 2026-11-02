@@ -13,7 +13,7 @@ const client = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: 75000,
 });
 
 // Response interceptor to unwrap safe error messages

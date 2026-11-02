@@ -46,6 +46,10 @@ export default function InvestigationRoom({ activeCase, onCaseUpdated }) {
   // Evaluate Adaptive Assistance when in-game progress signals change
   useEffect(() => {
     if (currentCaseId && !challengeMode) {
+      if (currentCaseId.startsWith('case-')) {
+        setCopilotSuggestion(null);
+        return;
+      }
       casesApi.getCaseAssistance(currentCaseId, challengeMode)
         .then((res) => {
           if (res?.recommendation) {

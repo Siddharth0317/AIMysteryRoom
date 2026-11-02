@@ -47,8 +47,9 @@ export default function CreateMystery({ onCaseCreated }) {
       try {
         newCase = await casesApi.createCase(trimmed, difficulty);
       } catch (apiErr) {
-        console.warn('Backend API request error, fallback to local simulation:', apiErr.message);
-        newCase = createMockCase(trimmed, difficulty);
+        setError(`Investigation server connection error: ${apiErr.message}. If the cloud server is waking from cold start, please click Initialize again.`);
+        setIsGenerating(false);
+        return;
       }
 
       if (onCaseCreated) {
