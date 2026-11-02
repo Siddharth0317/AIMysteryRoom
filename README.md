@@ -121,7 +121,6 @@ AIMysteryRoom/
 ├── render.yaml                 # Render backend hosting blueprint
 ├── vercel.json                 # Root Vercel deployment configuration
 ├── SPEC.md                     # Authoritative product & technical specification
-├── GEMINI.md                   # Authoritative agent rules & coding conventions
 ├── LICENSE                     # MIT License
 └── README.md                   # Project documentation
 ```
