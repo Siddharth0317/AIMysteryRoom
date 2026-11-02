@@ -65,7 +65,7 @@ export function cleanJsonText(rawText) {
  */
 export async function generateMysteryCase(premise, difficulty, options = {}) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
   // Injectable client for unit testing and mock injection
   const client = options.client || (apiKey && apiKey !== 'your_gemini_api_key_here' ? new GoogleGenAI({ apiKey }) : null);
@@ -343,14 +343,15 @@ export async function generateInterrogationResponse(caseDoc, suspectId, question
 
   const apiKey = process.env.GEMINI_API_KEY;
   const client = options.client;
+  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.NODE_TEST_CONTEXT);
 
-  if (client || (apiKey && apiKey !== 'your_gemini_api_key_here')) {
+  if (client || (apiKey && apiKey !== 'your_gemini_api_key_here' && !isTest)) {
     try {
       const genAiClient = client || new GoogleGenAI({ apiKey });
       const prompt = buildInterrogationPrompt({ suspect, caseDoc, question, category });
 
       const response = await genAiClient.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
         contents: prompt,
         config: {
           temperature: 0.7,
@@ -467,14 +468,15 @@ export function generateDeterministicAnalysis(caseDoc) {
 export async function generatePostGameAnalysis(caseDoc, options = {}) {
   const apiKey = process.env.GEMINI_API_KEY;
   const client = options.client;
+  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.NODE_TEST_CONTEXT);
 
-  if (client || (apiKey && apiKey !== 'your_gemini_api_key_here')) {
+  if (client || (apiKey && apiKey !== 'your_gemini_api_key_here' && !isTest)) {
     try {
       const genAiClient = client || new GoogleGenAI({ apiKey });
       const prompt = buildAnalysisPrompt(caseDoc);
 
       const response = await genAiClient.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
         contents: prompt,
         config: {
           temperature: 0.4,

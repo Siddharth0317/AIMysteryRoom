@@ -63,10 +63,11 @@ function createPhase2Template(premise, difficulty) {
 
 export async function createCase({ premise, difficulty, aiClient = null }) {
   const apiKey = process.env.GEMINI_API_KEY;
+  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.NODE_TEST_CONTEXT);
   let caseData;
 
-  // Use Gemini API if client provided or valid GEMINI_API_KEY exists
-  if (aiClient || (apiKey && apiKey !== 'your_gemini_api_key_here')) {
+  // Use Gemini API if client provided or valid GEMINI_API_KEY exists outside automated test runner
+  if (aiClient || (apiKey && apiKey !== 'your_gemini_api_key_here' && !isTest)) {
     try {
       const generated = await generateMysteryCase(premise, difficulty, { client: aiClient });
       const caseId = `case_${crypto.randomBytes(6).toString('hex')}`;

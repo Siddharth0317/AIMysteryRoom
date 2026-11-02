@@ -1,11 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import caseRoutes from './routes/caseRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { isDbConnected } from './config/db.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables gracefully from current dir, server dir, or root dir
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: path.resolve(__dirname, '../.env.production') });
+  dotenv.config({ path: path.resolve(__dirname, '../../.env.production') });
+}
 
 const app = express();
 
